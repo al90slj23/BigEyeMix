@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BigEyeMix 巫师模式 - 即将推出</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
             margin: 0;
@@ -31,8 +32,14 @@
         }
 
         .icon {
-            font-size: 80px;
             margin-bottom: 30px;
+        }
+
+        .icon i {
+            width: 80px;
+            height: 80px;
+            color: #667eea;
+            stroke-width: 1.5;
         }
 
         h1 {
@@ -61,16 +68,17 @@
             font-size: 16px;
         }
 
-        .feature:before {
-            content: "✓";
+        .feature i {
             color: #667eea;
-            font-weight: bold;
             margin-right: 15px;
-            font-size: 24px;
+            width: 24px;
+            height: 24px;
         }
 
         .btn {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
             padding: 18px 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -79,6 +87,11 @@
             font-size: 16px;
             font-weight: 600;
             transition: all 0.3s;
+        }
+
+        .btn i {
+            width: 20px;
+            height: 20px;
         }
 
         .btn:hover {
@@ -95,7 +108,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="icon">🎨</div>
+        <div class="icon"><i data-lucide="sparkles"></i></div>
         <h1>巫师模式即将推出</h1>
         <p class="subtitle">
             我们正在集成 AudioMass 专业音频编辑器<br>
@@ -103,18 +116,20 @@
         </p>
 
         <div class="features">
-            <div class="feature">多轨音频编辑</div>
-            <div class="feature">精确剪切和拼接</div>
-            <div class="feature">丰富的音频效果</div>
-            <div class="feature">专业级波形显示</div>
-            <div class="feature">基于 WaveSurfer.js</div>
+            <div class="feature"><i data-lucide="check"></i>多轨音频编辑</div>
+            <div class="feature"><i data-lucide="check"></i>精确剪切和拼接</div>
+            <div class="feature"><i data-lucide="check"></i>丰富的音频效果</div>
+            <div class="feature"><i data-lucide="check"></i>专业级波形显示</div>
+            <div class="feature"><i data-lucide="check"></i>基于 WaveSurfer.js</div>
         </div>
 
-        <a href="/muggle" class="btn">← 返回麻瓜模式</a>
+        <a href="/muggle" class="btn"><i data-lucide="arrow-left"></i> 返回麻瓜模式</a>
 
         <p class="note">
             目前可以使用麻瓜模式快速完成音乐混音
         </p>
     </div>
+    
+    <script>lucide.createIcons();</script>
 </body>
 </html>

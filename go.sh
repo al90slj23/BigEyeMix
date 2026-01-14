@@ -28,7 +28,7 @@ source "$SCRIPT_DIR/go.lib.sh"
 show_menu() {
     echo ""
     echo "================================"
-    echo "    BigEyeMix 项目管理"
+    echo "  BigEyeMix 大眼怪の混剪平台"
     echo "================================"
     echo ""
     echo "请选择操作："

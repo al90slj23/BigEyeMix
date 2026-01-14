@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BigEyeMix 向导模式 - 3步完成音乐混音</title>
+    <title>BigEyeMix 麻瓜模式 - 3步完成音乐混音</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
             margin: 0;
@@ -35,6 +36,14 @@
             color: white;
             font-size: 24px;
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            width: 28px;
+            height: 28px;
         }
 
         .mode-switch {
@@ -44,10 +53,18 @@
             border-radius: 20px;
             text-decoration: none;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .mode-switch:hover {
             background: rgba(255,255,255,0.3);
+        }
+
+        .mode-switch i {
+            width: 18px;
+            height: 18px;
         }
 
         .progress-bar {
@@ -144,8 +161,13 @@
         }
 
         .scene-icon {
-            font-size: 48px;
             margin-bottom: 15px;
+        }
+
+        .scene-icon i {
+            width: 48px;
+            height: 48px;
+            color: #667eea;
         }
 
         .scene-name {
@@ -187,9 +209,13 @@
         }
 
         .upload-icon {
-            font-size: 64px;
             margin-bottom: 15px;
-            opacity: 0.5;
+        }
+
+        .upload-icon i {
+            width: 64px;
+            height: 64px;
+            color: #999;
         }
 
         .upload-text {
@@ -217,8 +243,10 @@
             display: flex;
         }
 
-        .file-icon {
-            font-size: 32px;
+        .file-icon i {
+            width: 32px;
+            height: 32px;
+            color: #667eea;
         }
 
         .file-details {
@@ -294,6 +322,15 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn i {
+            width: 20px;
+            height: 20px;
         }
 
         .btn-secondary {
@@ -322,9 +359,14 @@
         }
 
         .result-icon {
-            font-size: 80px;
             text-align: center;
             margin-bottom: 20px;
+        }
+
+        .result-icon i {
+            width: 80px;
+            height: 80px;
+            color: #22c55e;
         }
 
         .result-title {
@@ -352,6 +394,15 @@
             font-weight: 600;
             cursor: pointer;
             margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .download-btn i {
+            width: 24px;
+            height: 24px;
         }
 
         .download-btn:hover {
@@ -392,8 +443,8 @@
 <body>
     <div class="muggle-container">
         <div class="top-nav">
-            <div class="logo">👁️ BigEyeMix</div>
-            <a href="/wizard" class="mode-switch">切换到巫师模式 →</a>
+            <div class="logo"><i data-lucide="eye"></i> BigEyeMix</div>
+            <a href="/wizard" class="mode-switch">切换到巫师模式 <i data-lucide="arrow-right"></i></a>
         </div>
 
         <div class="progress-bar">
@@ -413,22 +464,22 @@
             <div class="step-content active" data-step="1">
                 <div class="scene-grid">
                     <div class="scene-card" data-scene="quick-fade">
-                        <div class="scene-icon">⚡</div>
+                        <div class="scene-icon"><i data-lucide="zap"></i></div>
                         <div class="scene-name">快速淡入淡出</div>
                         <div class="scene-desc">两首歌平滑过渡，适合制作歌单串烧</div>
                     </div>
                     <div class="scene-card" data-scene="seamless">
-                        <div class="scene-icon">🎵</div>
+                        <div class="scene-icon"><i data-lucide="music"></i></div>
                         <div class="scene-name">无缝衔接</div>
                         <div class="scene-desc">智能检测节拍，完美衔接两首歌</div>
                     </div>
                     <div class="scene-card" data-scene="dj-mix">
-                        <div class="scene-icon">🎧</div>
+                        <div class="scene-icon"><i data-lucide="headphones"></i></div>
                         <div class="scene-name">DJ 混音</div>
                         <div class="scene-desc">专业 DJ 风格，长过渡 + 节拍匹配</div>
                     </div>
                     <div class="scene-card" data-scene="custom">
-                        <div class="scene-icon">🎨</div>
+                        <div class="scene-icon"><i data-lucide="sliders"></i></div>
                         <div class="scene-name">自定义</div>
                         <div class="scene-desc">自己设置参数，完全掌控</div>
                     </div>
@@ -438,12 +489,12 @@
             <div class="step-content" data-step="2">
                 <div class="upload-section">
                     <div class="upload-box" id="uploadBoxA" onclick="document.getElementById('fileA').click()">
-                        <div class="upload-icon">🎵</div>
+                        <div class="upload-icon"><i data-lucide="music"></i></div>
                         <div class="upload-text">点击上传第一首歌</div>
                         <div class="upload-hint">支持 MP3, WAV, FLAC 等格式</div>
                     </div>
                     <div class="file-info" id="fileInfoA">
-                        <div class="file-icon">🎵</div>
+                        <div class="file-icon"><i data-lucide="file-audio"></i></div>
                         <div class="file-details">
                             <div class="file-name" id="fileNameA"></div>
                             <div class="file-meta" id="fileMetaA"></div>
@@ -451,12 +502,12 @@
                     </div>
 
                     <div class="upload-box" id="uploadBoxB" onclick="document.getElementById('fileB').click()">
-                        <div class="upload-icon">🎵</div>
+                        <div class="upload-icon"><i data-lucide="music"></i></div>
                         <div class="upload-text">点击上传第二首歌</div>
                         <div class="upload-hint">支持 MP3, WAV, FLAC 等格式</div>
                     </div>
                     <div class="file-info" id="fileInfoB">
-                        <div class="file-icon">🎵</div>
+                        <div class="file-icon"><i data-lucide="file-audio"></i></div>
                         <div class="file-details">
                             <div class="file-name" id="fileNameB"></div>
                             <div class="file-meta" id="fileMetaB"></div>
@@ -494,24 +545,24 @@
                 </div>
 
                 <div id="resultView" style="display: none;">
-                    <div class="result-icon">✨</div>
+                    <div class="result-icon"><i data-lucide="check-circle"></i></div>
                     <div class="result-title">混音完成！</div>
                     <div class="result-desc">你的音乐已经准备好了</div>
                     <button class="download-btn" id="downloadBtn">
-                        ⬇️ 下载混音文件
+                        <i data-lucide="download"></i> 下载混音文件
                     </button>
                     <button class="btn btn-secondary" onclick="location.reload()">
-                        🔄 重新开始
+                        <i data-lucide="refresh-cw"></i> 重新开始
                     </button>
                 </div>
             </div>
 
             <div class="button-group" id="buttonGroup">
                 <button class="btn btn-secondary" id="prevBtn" onclick="prevStep()" style="display: none;">
-                    ← 上一步
+                    <i data-lucide="arrow-left"></i> 上一步
                 </button>
                 <button class="btn btn-primary" id="nextBtn" onclick="nextStep()" disabled>
-                    下一步 →
+                    下一步 <i data-lucide="arrow-right"></i>
                 </button>
             </div>
         </div>
@@ -522,5 +573,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/muggle/main.js"></script>
+    <script>lucide.createIcons();</script>
 </body>
 </html>

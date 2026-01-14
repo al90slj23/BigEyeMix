@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'bigeye.api',
+      name: 'BigEyeMix-API',
       cwd: '/www/wwwroot/bem.it.sc.cn/api',
       script: 'python3.11',
       args: '-m uvicorn main:app --host 0.0.0.0 --port 8000',

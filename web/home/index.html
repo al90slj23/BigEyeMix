@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BigEyeMix 👁️ - 专业音频编辑平台</title>
+    <title>BigEyeMix - 大眼怪の混剪平台</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -29,8 +30,15 @@
         }
         
         .logo {
-            font-size: 64px;
-            margin-bottom: 20px;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+        
+        .logo i {
+            width: 80px;
+            height: 80px;
+            stroke-width: 1.5;
         }
         
         h1 {
@@ -66,9 +74,15 @@
         }
         
         .mode-icon {
-            font-size: 72px;
             text-align: center;
             margin-bottom: 25px;
+        }
+        
+        .mode-icon i {
+            width: 72px;
+            height: 72px;
+            color: #667eea;
+            stroke-width: 1.5;
         }
         
         .mode-title {
@@ -100,12 +114,11 @@
             font-size: 15px;
         }
         
-        .mode-features li:before {
-            content: "✓";
+        .mode-features li i {
             color: #667eea;
-            font-weight: bold;
             margin-right: 12px;
-            font-size: 22px;
+            width: 22px;
+            height: 22px;
         }
         
         .mode-button {
@@ -151,44 +164,46 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">👁️</div>
+            <div class="logo"><i data-lucide="eye"></i></div>
             <h1>BigEyeMix</h1>
-            <p class="subtitle">专业音频编辑平台 - 选择你的编辑模式</p>
+            <p class="subtitle">大眼怪の混剪平台 - 选择你的编辑模式</p>
         </div>
         
         <div class="modes">
-            <!-- 向导模式 -->
+            <!-- 麻瓜模式 -->
             <div class="mode-card" onclick="location.href='/muggle'">
-                <div class="mode-icon">🎯</div>
+                <div class="mode-icon"><i data-lucide="wand-2"></i></div>
                 <h2 class="mode-title">麻瓜模式</h2>
-                <p class="mode-desc">简单直观，3步完成混音<br>适合快速制作和新手用户</p>
+                <p class="mode-desc">简单直观：3步完成混音剪辑<br>适合大眼怪脑子不好用的时候</p>
                 <ul class="mode-features">
-                    <li>上传两首歌曲</li>
-                    <li>选择混音场景</li>
-                    <li>AI 智能过渡</li>
-                    <li>一键生成混音</li>
+                    <li><i data-lucide="check"></i>上传两首歌曲</li>
+                    <li><i data-lucide="check"></i>选择混音场景</li>
+                    <li><i data-lucide="check"></i>AI 智能过渡</li>
+                    <li><i data-lucide="check"></i>一键生成混音</li>
                 </ul>
-                <button class="mode-button">开始快速混音 →</button>
+                <button class="mode-button">开始快速混音</button>
             </div>
             
             <!-- 巫师模式 -->
             <div class="mode-card" onclick="location.href='/wizard'">
-                <div class="mode-icon">🎨</div>
+                <div class="mode-icon"><i data-lucide="sparkles"></i></div>
                 <h2 class="mode-title">巫师模式</h2>
-                <p class="mode-desc">完整音频编辑器<br>适合专业用户和精细控制</p>
+                <p class="mode-desc">完整编辑：完整模式音频编辑<br>适合大眼怪清醒想认真的时候</p>
                 <ul class="mode-features">
-                    <li>多轨音频编辑</li>
-                    <li>精确剪切和拼接</li>
-                    <li>丰富的音频效果</li>
-                    <li>专业级功能</li>
+                    <li><i data-lucide="check"></i>多轨音频编辑</li>
+                    <li><i data-lucide="check"></i>精确剪切和拼接</li>
+                    <li><i data-lucide="check"></i>丰富的音频效果</li>
+                    <li><i data-lucide="check"></i>专业级功能</li>
                 </ul>
-                <button class="mode-button">进入专业编辑 →</button>
+                <button class="mode-button">进入专业编辑</button>
             </div>
         </div>
         
         <div class="footer">
-            <p>© 2026 BigEyeMix - 让音乐编辑更简单</p>
+            <p>BigEyeMix - 大眼怪の混剪平台</p>
         </div>
     </div>
+    
+    <script>lucide.createIcons();</script>
 </body>
 </html>
