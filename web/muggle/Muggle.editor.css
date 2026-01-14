@@ -276,8 +276,8 @@
 /* ==================== Waveform Ruler (标尺卡) ==================== */
 .waveform-ruler {
     position: absolute;
-    top: -18px;  /* 超出容器顶部 */
-    bottom: -18px; /* 超出容器底部 */
+    top: -18px;
+    bottom: -18px;
     left: 0;
     width: 2px;
     background: #667eea;
@@ -285,10 +285,9 @@
     z-index: 100;
 }
 
-/* 顶部圆球手柄 */
+/* 圆球手柄（上下都有） */
 .waveform-ruler .ruler-handle {
     position: absolute;
-    top: 0;
     left: -11px;
     width: 24px;
     height: 24px;
@@ -311,17 +310,12 @@
     border-radius: 50%;
 }
 
-/* 底部圆球 */
-.waveform-ruler::after {
-    content: '';
-    position: absolute;
+.waveform-ruler .ruler-handle-top {
+    top: 0;
+}
+
+.waveform-ruler .ruler-handle-bottom {
     bottom: 0;
-    left: -11px;
-    width: 24px;
-    height: 24px;
-    background: inherit;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .waveform-ruler.dragging .ruler-handle {
@@ -445,4 +439,90 @@
 .waveform-navigator:active .navigator-viewport {
     border-color: #764ba2;
     background: rgba(118, 75, 162, 0.15);
+}
+
+
+/* ==================== Color Picker ==================== */
+.color-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.color-picker-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    width: 280px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.color-picker-title {
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+.color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.color-picker-item {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.color-picker-item:active {
+    transform: scale(0.95);
+}
+
+.color-picker-item.selected {
+    box-shadow: 0 0 0 3px white, 0 0 0 5px currentColor;
+}
+
+.color-picker-item i {
+    width: 24px;
+    height: 24px;
+    color: white;
+}
+
+.color-picker-close {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+}
+
+.color-picker-close:active {
+    background: #e0e0e0;
+}
+
+.track-label {
+    cursor: pointer;
+}
+
+.track-label:active {
+    transform: scale(0.95);
 }

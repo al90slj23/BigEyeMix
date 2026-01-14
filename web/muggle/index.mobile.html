@@ -6,12 +6,12 @@
     <title>BigEyeMix 麻瓜模式</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
-    <link rel="stylesheet" href="/muggle/Muggle.base.css?v=17">
-    <link rel="stylesheet" href="/muggle/Muggle.upload.css?v=17">
-    <link rel="stylesheet" href="/muggle/Muggle.editor.css?v=17">
-    <link rel="stylesheet" href="/muggle/Muggle.timeline.css?v=17">
-    <link rel="stylesheet" href="/muggle/Muggle.modal.css?v=17">
-    <link rel="stylesheet" href="/muggle/Muggle.effects.css?v=17">
+    <link rel="stylesheet" href="/muggle/Muggle.base.css?v=18">
+    <link rel="stylesheet" href="/muggle/Muggle.upload.css?v=18">
+    <link rel="stylesheet" href="/muggle/Muggle.editor.css?v=18">
+    <link rel="stylesheet" href="/muggle/Muggle.timeline.css?v=18">
+    <link rel="stylesheet" href="/muggle/Muggle.modal.css?v=18">
+    <link rel="stylesheet" href="/muggle/Muggle.effects.css?v=18">
 </head>
 <body>
     <div class="container">
@@ -89,7 +89,7 @@
 
     <!-- Custom Gap Modal -->
     <div class="modal-overlay" id="customGapModal">
-        <div class="modal-content" style="max-width: 320px;">
+        <div class="modal-content" style="max-width: 340px;">
             <div class="modal-header">
                 <span class="modal-title">添加间隔</span>
                 <button class="modal-close" onclick="closeCustomGapModal()"><i data-lucide="x"></i></button>
@@ -97,20 +97,7 @@
             <div class="modal-body" style="padding: 20px;">
                 <div style="margin-bottom: 16px;">
                     <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">过渡类型</label>
-                    <div class="gap-type-selector" id="gapTypeSelector">
-                        <div class="gap-type-option selected" data-type="ai_fill">
-                            <i data-lucide="sparkles"></i>
-                            <span>AI 填充</span>
-                        </div>
-                        <div class="gap-type-option" data-type="silence">
-                            <i data-lucide="volume-x"></i>
-                            <span>静音</span>
-                        </div>
-                        <div class="gap-type-option" data-type="crossfade">
-                            <i data-lucide="zap"></i>
-                            <span>淡入淡出</span>
-                        </div>
-                    </div>
+                    <div class="gap-type-selector" id="gapTypeSelector"></div>
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">间隔时长（秒）</label>
@@ -120,6 +107,19 @@
                 <button onclick="addCustomGap()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
                     添加间隔块
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Color Picker Modal -->
+    <div class="modal-overlay" id="colorPickerModal">
+        <div class="modal-content" style="max-width: 320px;">
+            <div class="modal-header">
+                <span class="modal-title" id="colorPickerTitle">选择颜色</span>
+                <button class="modal-close" onclick="closeColorPicker()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="color-picker-grid" id="colorPickerGrid"></div>
             </div>
         </div>
     </div>
@@ -140,17 +140,17 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/muggle/Muggle.config.js?v=17"></script>
-    <script src="/muggle/Muggle.utils.js?v=17"></script>
-    <script src="/muggle/Muggle.upload.js?v=17"></script>
-    <script src="/muggle/Muggle.history.js?v=17"></script>
-    <script src="/muggle/Muggle.editor.js?v=17"></script>
-    <script src="/muggle/Muggle.editor.clips.js?v=17"></script>
-    <script src="/muggle/Muggle.timeline.js?v=17"></script>
-    <script src="/muggle/Muggle.timeline.drag.js?v=17"></script>
-    <script src="/muggle/Muggle.timeline.preview.js?v=17"></script>
-    <script src="/muggle/Muggle.timeline.ai.js?v=17"></script>
-    <script src="/muggle/Muggle.logic.js?v=17"></script>
+    <script src="/muggle/Muggle.config.js?v=18"></script>
+    <script src="/muggle/Muggle.utils.js?v=18"></script>
+    <script src="/muggle/Muggle.upload.js?v=18"></script>
+    <script src="/muggle/Muggle.history.js?v=18"></script>
+    <script src="/muggle/Muggle.editor.js?v=18"></script>
+    <script src="/muggle/Muggle.editor.clips.js?v=18"></script>
+    <script src="/muggle/Muggle.timeline.js?v=18"></script>
+    <script src="/muggle/Muggle.timeline.drag.js?v=18"></script>
+    <script src="/muggle/Muggle.timeline.preview.js?v=18"></script>
+    <script src="/muggle/Muggle.timeline.ai.js?v=18"></script>
+    <script src="/muggle/Muggle.logic.js?v=18"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>

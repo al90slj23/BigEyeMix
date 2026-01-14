@@ -20,7 +20,7 @@ function renderEditorAndTimeline() {
             ${uploadedTracks.map(track => `
                 <div class="track-editor" data-track="${track.id}">
                     <div class="track-header">
-                        <div class="track-label" style="background:${track.color.bg}">${track.label}</div>
+                        <div class="track-label" style="background:${track.color.bg}" onclick="showColorPicker(${track.id})">${track.label}</div>
                         <div class="track-name">${track.file.name}</div>
                         <div class="track-duration">${formatTime(track.info.duration)}</div>
                     </div>
@@ -40,7 +40,8 @@ function renderEditorAndTimeline() {
                                 <div class="waveform" id="waveform${track.id}" style="display:none;"></div>
                             </div>
                             <div class="waveform-ruler" id="waveformRuler${track.id}" style="background:${track.color.bg}">
-                                <div class="ruler-handle" style="background:${track.color.bg}"></div>
+                                <div class="ruler-handle ruler-handle-top" style="background:${track.color.bg}"></div>
+                                <div class="ruler-handle ruler-handle-bottom" style="background:${track.color.bg}"></div>
                             </div>
                         </div>
                         <div class="waveform-zoom-btns">
@@ -315,14 +316,25 @@ function initWaveform(track) {
     });
     
     if (rulerEl) {
-        const rulerHandle = rulerEl.querySelector('.ruler-handle');
+        const rulerHandles = rulerEl.querySelectorAll('.ruler-handle');
         
-        // 触摸拖动标尺
-        rulerHandle.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            rulerDragging = true;
-            rulerEl.classList.add('dragging');
+        // 为所有手柄绑定事件
+        rulerHandles.forEach(handle => {
+            // 触摸拖动标尺
+            handle.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                rulerDragging = true;
+                rulerEl.classList.add('dragging');
+            });
+            
+            // 鼠标拖动标尺
+            handle.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                rulerDragging = true;
+                rulerEl.classList.add('dragging');
+            });
         });
         
         document.addEventListener('touchmove', (e) => {
@@ -337,14 +349,6 @@ function initWaveform(track) {
                 rulerDragging = false;
                 rulerEl.classList.remove('dragging');
             }
-        });
-        
-        // 鼠标拖动标尺
-        rulerHandle.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            rulerDragging = true;
-            rulerEl.classList.add('dragging');
         });
         
         document.addEventListener('mousemove', (e) => {
@@ -637,5 +641,60 @@ function initWaveform(track) {
                 navigatorWavesurfer.setTime(time);
             }
         });
+    }
+}
+
+
+// ==================== 颜色选择器 ====================
+function showColorPicker(trackId) {
+    const track = state.tracks.find(t => t.id === trackId);
+    if (!track) return;
+    
+    // 创建颜色选择器弹窗
+    const overlay = document.createElement('div');
+    overlay.className = 'color-picker-overlay';
+    overlay.innerHTML = `
+        <div class="color-picker-modal">
+            <div class="color-picker-title">选择轨道颜色</div>
+            <div class="color-picker-grid">
+                ${trackColors.map((color, idx) => `
+                    <div class="color-picker-item ${track.color.name === color.name ? 'selected' : ''}" 
+                         data-color-idx="${idx}" 
+                         style="background:${color.bg}">
+                        ${track.color.name === color.name ? '<i data-lucide="check"></i>' : ''}
+                    </div>
+                `).join('')}
+            </div>
+            <button class="color-picker-close" onclick="closeColorPicker()">取消</button>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    refreshIcons();
+    
+    // 绑定颜色选择事件
+    overlay.querySelectorAll('.color-picker-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const colorIdx = parseInt(item.dataset.colorIdx);
+            const newColor = trackColors[colorIdx];
+            track.color = newColor;
+            closeColorPicker();
+            // 重新渲染编辑器
+            renderEditorAndTimeline();
+        });
+    });
+    
+    // 点击遮罩关闭
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeColorPicker();
+        }
+    });
+}
+
+function closeColorPicker() {
+    const overlay = document.querySelector('.color-picker-overlay');
+    if (overlay) {
+        overlay.remove();
     }
 }

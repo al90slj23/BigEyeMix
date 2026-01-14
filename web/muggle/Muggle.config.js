@@ -15,12 +15,16 @@ const state = {
     previewWavesurfer: null
 };
 
-// 间隔块类型
+// 间隔块类型（顺序：AI填充 > 根据节奏 > 淡入淡出 > 静音）
 const gapTypes = {
-    ai_fill: { name: 'AI 填充', icon: 'sparkles', color: '#8b5cf6' },
-    silence: { name: '静音', icon: 'volume-x', color: '#6b7280' },
-    crossfade: { name: '淡入淡出', icon: 'zap', color: '#f59e0b' }
+    ai_fill:   { name: 'AI 填充',   icon: 'sparkles',    color: '#8b5cf6', desc: '智能生成过渡音频' },
+    beat_sync: { name: '根据节奏',  icon: 'activity',    color: '#ec4899', desc: '基于BPM节拍对齐' },
+    crossfade: { name: '淡入淡出',  icon: 'git-merge',   color: '#f59e0b', desc: '平滑音量渐变' },
+    silence:   { name: '静音',      icon: 'volume-x',    color: '#6b7280', desc: '无声间隔' }
 };
+
+// 间隔类型顺序
+const gapTypeOrder = ['ai_fill', 'beat_sync', 'crossfade', 'silence'];
 
 // 预设间隔块（秒）- 默认使用 AI 填充
 const gapPresets = [1, 2, 3, 5, 10];
