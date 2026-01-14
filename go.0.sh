@@ -55,7 +55,7 @@ else
 fi
 
 # 启动后端
-python3.11 -m uvicorn main:app --reload --port 8000 &
+python3.11 -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 cd "$SCRIPT_DIR"
@@ -68,7 +68,7 @@ success "后端已启动 (PID: $BACKEND_PID)"
 step "启动前端服务 (端口 8080)..."
 
 cd "$SCRIPT_DIR/web"
-python3 -m http.server 8080 &
+python3 -m http.server 8080 --bind 0.0.0.0 &
 FRONTEND_PID=$!
 
 cd "$SCRIPT_DIR"
@@ -78,16 +78,24 @@ success "前端已启动 (PID: $FRONTEND_PID)"
 # 4. 显示访问地址
 # ============================================================
 
+# 获取本机局域网 IP
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "未知")
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 success "开发环境已启动！"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "访问地址："
+echo "本机访问："
 echo "  🏠 首页: http://localhost:8080/home/"
 echo "  🎯 麻瓜模式: http://localhost:8080/muggle/"
 echo "  🎨 巫师模式: http://localhost:8080/wizard/"
 echo "  📚 API 文档: http://localhost:8000/docs"
+echo ""
+echo "局域网访问（手机测试）："
+echo "  🏠 首页: http://${LOCAL_IP}:8080/home/"
+echo "  🎯 麻瓜模式: http://${LOCAL_IP}:8080/muggle/"
+echo "  🎨 巫师模式: http://${LOCAL_IP}:8080/wizard/"
 echo ""
 echo "按 Ctrl+C 停止服务"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

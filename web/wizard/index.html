@@ -3,133 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BigEyeMix 巫师模式 - 即将推出</title>
+    <title>BigEyeMix 巫师模式</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
         }
-
         .container {
-            max-width: 600px;
-            background: white;
-            border-radius: 24px;
-            padding: 60px;
             text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            color: white;
+            padding: 40px;
+            max-width: 500px;
         }
-
-        .icon {
-            margin-bottom: 30px;
-        }
-
-        .icon i {
-            width: 80px;
-            height: 80px;
-            color: #667eea;
-            stroke-width: 1.5;
-        }
-
-        h1 {
-            font-size: 36px;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
+        .icon { margin-bottom: 24px; }
+        .icon i { width: 80px; height: 80px; color: #e94560; }
+        h1 { font-size: 32px; margin-bottom: 12px; }
         .subtitle {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 40px;
-            line-height: 1.6;
+            font-size: 14px;
+            color: #e94560;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
         }
-
+        p { font-size: 16px; opacity: 0.8; margin-bottom: 32px; line-height: 1.6; }
         .features {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 32px;
             text-align: left;
-            margin-bottom: 40px;
         }
-
-        .feature {
-            padding: 15px 0;
-            color: #555;
+        .features h3 {
+            font-size: 14px;
+            color: #e94560;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            font-size: 16px;
+            gap: 8px;
         }
-
-        .feature i {
-            color: #667eea;
-            margin-right: 15px;
-            width: 24px;
-            height: 24px;
+        .features h3 i { width: 16px; height: 16px; }
+        .features ul {
+            list-style: none;
+            font-size: 13px;
+            opacity: 0.8;
         }
-
+        .features li {
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .features li i { width: 14px; height: 14px; color: #e94560; }
+        .hint {
+            background: rgba(233, 69, 96, 0.15);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .hint i { width: 16px; height: 16px; color: #e94560; }
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 18px 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            gap: 8px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #e94560 0%, #c73659 100%);
             color: white;
             text-decoration: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 15px;
             font-weight: 600;
             transition: all 0.3s;
         }
-
-        .btn i {
-            width: 20px;
-            height: 20px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        .note {
-            margin-top: 30px;
-            font-size: 14px;
-            color: #999;
-        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(233, 69, 96, 0.4); }
+        .btn i { width: 18px; height: 18px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="icon"><i data-lucide="sparkles"></i></div>
-        <h1>巫师模式即将推出</h1>
-        <p class="subtitle">
-            我们正在集成 AudioMass 专业音频编辑器<br>
-            为您带来完整的多轨编辑体验
-        </p>
-
+        <div class="icon"><i data-lucide="wand-2"></i></div>
+        <div class="subtitle">Advanced Mode</div>
+        <h1>巫师模式</h1>
+        <p>专业级音频编辑工具，提供完整的波形编辑、多轨混音、效果处理等高级功能。</p>
+        
         <div class="features">
-            <div class="feature"><i data-lucide="check"></i>多轨音频编辑</div>
-            <div class="feature"><i data-lucide="check"></i>精确剪切和拼接</div>
-            <div class="feature"><i data-lucide="check"></i>丰富的音频效果</div>
-            <div class="feature"><i data-lucide="check"></i>专业级波形显示</div>
-            <div class="feature"><i data-lucide="check"></i>基于 WaveSurfer.js</div>
+            <h3><i data-lucide="sparkles"></i> 即将推出</h3>
+            <ul>
+                <li><i data-lucide="check"></i> 多轨道波形编辑</li>
+                <li><i data-lucide="check"></i> 精确时间轴控制</li>
+                <li><i data-lucide="check"></i> 音频效果器（EQ、压缩、混响）</li>
+                <li><i data-lucide="check"></i> 实时预览与监听</li>
+                <li><i data-lucide="check"></i> 项目保存与导出</li>
+            </ul>
         </div>
-
-        <a href="/muggle" class="btn"><i data-lucide="arrow-left"></i> 返回麻瓜模式</a>
-
-        <p class="note">
-            目前可以使用麻瓜模式快速完成音乐混音
-        </p>
+        
+        <div class="hint">
+            <i data-lucide="monitor"></i>
+            巫师模式仅支持 PC 端使用
+        </div>
+        
+        <a href="/" class="btn">
+            <i data-lucide="home"></i> 返回首页
+        </a>
     </div>
-    
     <script>lucide.createIcons();</script>
 </body>
 </html>

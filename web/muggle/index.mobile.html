@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BigEyeMix 麻瓜模式</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <link rel="stylesheet" href="/muggle/Muggle.mobile.css?v=2">
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <div class="logo"><i data-lucide="eye"></i> BigEyeMix</div>
+            <a href="/wizard/" class="mode-switch">巫师模式 <i data-lucide="arrow-right"></i></a>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-step active" data-step="1"></div>
+            <div class="progress-step" data-step="2"></div>
+            <div class="progress-step" data-step="3"></div>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step-number" id="stepNumber">1/3</div>
+            <div class="step-title" id="stepTitle">上传音频</div>
+            <div class="step-desc" id="stepDesc">选择要混合的音频文件</div>
+        </div>
+
+        <div class="content-card">
+            <!-- Step 1: Upload -->
+            <div class="step-content active" data-step="1">
+                <div class="upload-list" id="uploadList"></div>
+                <div class="add-upload-btn" id="addUploadBtn">
+                    <i data-lucide="plus"></i> 添加更多音频
+                </div>
+            </div>
+
+            <!-- Step 2: Editor & Timeline -->
+            <div class="step-content" data-step="2">
+                <div id="trackEditors"></div>
+            </div>
+
+            <!-- Step 3: Result -->
+            <div class="step-content" data-step="3">
+                <div id="processingView" class="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">正在生成混音...</div>
+                </div>
+                <div id="resultView" class="result-section" style="display: none;">
+                    <div class="result-icon"><i data-lucide="check-circle"></i></div>
+                    <div class="result-title">混音完成！</div>
+                    <div class="result-desc">你的音乐已经准备好了</div>
+                    <button class="download-btn" id="downloadBtn">
+                        <i data-lucide="download"></i> 下载混音文件
+                    </button>
+                    <button class="btn btn-secondary" onclick="location.reload()">
+                        <i data-lucide="refresh-cw"></i> 重新开始
+                    </button>
+                </div>
+            </div>
+
+            <div class="button-group" id="buttonGroup">
+                <button class="btn btn-secondary" id="prevBtn" onclick="prevStep()" style="display: none;">
+                    <i data-lucide="arrow-left"></i> 上一步
+                </button>
+                <button class="btn btn-primary" id="nextBtn" onclick="nextStep()" disabled>
+                    下一步 <i data-lucide="arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">选择历史文件</span>
+                <button class="modal-close" onclick="closeHistoryModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Custom Gap Modal -->
+    <div class="modal-overlay" id="customGapModal">
+        <div class="modal-content" style="max-width: 320px;">
+            <div class="modal-header">
+                <span class="modal-title">添加间隔</span>
+                <button class="modal-close" onclick="closeCustomGapModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">过渡类型</label>
+                    <div class="gap-type-selector" id="gapTypeSelector">
+                        <div class="gap-type-option selected" data-type="ai_fill">
+                            <i data-lucide="sparkles"></i>
+                            <span>AI 填充</span>
+                        </div>
+                        <div class="gap-type-option" data-type="silence">
+                            <i data-lucide="volume-x"></i>
+                            <span>静音</span>
+                        </div>
+                        <div class="gap-type-option" data-type="crossfade">
+                            <i data-lucide="zap"></i>
+                            <span>淡入淡出</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">间隔时长（秒）</label>
+                    <input type="number" id="customGapInput" min="1" max="30" step="1" value="3" 
+                           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center;">
+                </div>
+                <button onclick="addCustomGap()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                    添加间隔块
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/muggle/Muggle.config.js?v=2"></script>
+    <script src="/muggle/Muggle.utils.js?v=2"></script>
+    <script src="/muggle/Muggle.upload.js?v=2"></script>
+    <script src="/muggle/Muggle.history.js?v=2"></script>
+    <script src="/muggle/Muggle.editor.js?v=2"></script>
+    <script src="/muggle/Muggle.timeline.js?v=2"></script>
+    <script src="/muggle/Muggle.logic.js?v=2"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
