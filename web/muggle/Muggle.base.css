@@ -1,0 +1,193 @@
+/**
+ * Muggle.base.css - 基础样式
+ * BigEyeMix 麻瓜模式
+ */
+
+/* ==================== Base ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    /* 禁用双击放大 */
+    touch-action: manipulation;
+}
+/* 允许输入框选择文本 */
+input, textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+/* 禁用所有元素的双击放大 */
+button, a, div, span, label {
+    touch-action: manipulation;
+}
+.container { padding: 16px; padding-bottom: 100px; }
+
+/* ==================== Top Nav ==================== */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.logo {
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.logo i { width: 24px; height: 24px; }
+.mode-switch {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 16px;
+    text-decoration: none;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.mode-switch i { width: 14px; height: 14px; }
+
+/* ==================== Progress ==================== */
+.progress-bar {
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 6px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 6px;
+}
+.progress-step {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+.progress-step.active { background: white; }
+
+.step-indicator {
+    text-align: center;
+    color: white;
+    margin-bottom: 16px;
+}
+.step-number { font-size: 28px; font-weight: 700; opacity: 0.5; }
+.step-title { font-size: 20px; font-weight: 700; margin: 6px 0; }
+.step-desc { font-size: 13px; opacity: 0.9; }
+
+/* ==================== Content Card ==================== */
+.content-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    min-height: 400px;
+}
+/* 第二步编辑器模式：透明背景，子元素各自有白色块 */
+.content-card.editor-mode {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+.step-content { display: none; }
+.step-content.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==================== Buttons ==================== */
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 16px;
+    border-top: 1px solid #eee;
+    background: white;
+    border-radius: 0 0 20px 20px;
+}
+/* editor-mode 下按钮组独立白色块 */
+.editor-mode .button-group {
+    margin-top: 16px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-top: none;
+}
+.btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+.btn i { width: 18px; height: 18px; }
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+.btn-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+.btn-secondary {
+    background: #f5f5f5;
+    color: #666;
+}
+
+/* ==================== Result ==================== */
+.result-section { text-align: center; padding: 40px 20px; }
+.result-icon { margin-bottom: 20px; }
+.result-icon i { width: 64px; height: 64px; color: #10b981; }
+.result-title { font-size: 22px; font-weight: 700; color: #333; margin-bottom: 8px; }
+.result-desc { color: #666; margin-bottom: 24px; }
+.download-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+.download-btn i { width: 20px; height: 20px; }
+
+.loading { text-align: center; padding: 60px 20px; }
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #eee;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.loading-text { color: #666; font-size: 14px; }

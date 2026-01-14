@@ -6,7 +6,12 @@
     <title>BigEyeMix 麻瓜模式</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
-    <link rel="stylesheet" href="/muggle/Muggle.mobile.css?v=2">
+    <link rel="stylesheet" href="/muggle/Muggle.base.css?v=17">
+    <link rel="stylesheet" href="/muggle/Muggle.upload.css?v=17">
+    <link rel="stylesheet" href="/muggle/Muggle.editor.css?v=17">
+    <link rel="stylesheet" href="/muggle/Muggle.timeline.css?v=17">
+    <link rel="stylesheet" href="/muggle/Muggle.modal.css?v=17">
+    <link rel="stylesheet" href="/muggle/Muggle.effects.css?v=17">
 </head>
 <body>
     <div class="container">
@@ -119,14 +124,33 @@
         </div>
     </div>
 
+    <!-- Confirm Delete Modal -->
+    <div class="modal-overlay" id="confirmDeleteModal">
+        <div class="modal-content confirm-modal">
+            <div class="confirm-icon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <div class="confirm-title" id="confirmDeleteTitle">确认删除？</div>
+            <div class="confirm-desc" id="confirmDeleteDesc">此操作无法撤销</div>
+            <div class="confirm-buttons">
+                <button class="btn-cancel" onclick="closeConfirmDelete()">取消</button>
+                <button class="btn-confirm" id="confirmDeleteBtn">删除</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/muggle/Muggle.config.js?v=2"></script>
-    <script src="/muggle/Muggle.utils.js?v=2"></script>
-    <script src="/muggle/Muggle.upload.js?v=2"></script>
-    <script src="/muggle/Muggle.history.js?v=2"></script>
-    <script src="/muggle/Muggle.editor.js?v=2"></script>
-    <script src="/muggle/Muggle.timeline.js?v=2"></script>
-    <script src="/muggle/Muggle.logic.js?v=2"></script>
+    <script src="/muggle/Muggle.config.js?v=17"></script>
+    <script src="/muggle/Muggle.utils.js?v=17"></script>
+    <script src="/muggle/Muggle.upload.js?v=17"></script>
+    <script src="/muggle/Muggle.history.js?v=17"></script>
+    <script src="/muggle/Muggle.editor.js?v=17"></script>
+    <script src="/muggle/Muggle.editor.clips.js?v=17"></script>
+    <script src="/muggle/Muggle.timeline.js?v=17"></script>
+    <script src="/muggle/Muggle.timeline.drag.js?v=17"></script>
+    <script src="/muggle/Muggle.timeline.preview.js?v=17"></script>
+    <script src="/muggle/Muggle.timeline.ai.js?v=17"></script>
+    <script src="/muggle/Muggle.logic.js?v=17"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>

@@ -72,6 +72,10 @@ function updateStep() {
     });
     document.querySelector(`.step-content[data-step="${state.currentStep}"]`).classList.add('active');
     
+    // 第二步使用 editor-mode 样式（透明背景，子元素各自有白色块）
+    const contentCard = document.querySelector('.content-card');
+    contentCard.classList.toggle('editor-mode', state.currentStep === 2);
+    
     const stepTitles = {
         1: { title: '上传音频', desc: '选择要混合的音频文件' },
         2: { title: '剪辑组合', desc: '定义片段并拖拽组合' },

@@ -1,0 +1,294 @@
+/**
+ * Muggle.timeline.css - 时间线、拖拽、删除样式
+ * BigEyeMix 麻瓜模式
+ */
+
+/* ==================== Timeline Section ==================== */
+.timeline-section {
+    margin-top: 16px;
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.timeline-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.timeline-title i { width: 18px; height: 18px; color: #667eea; }
+.timeline-hint { font-size: 12px; color: #999; font-weight: 400; margin-left: auto; }
+
+/* ==================== Available Blocks ==================== */
+.available-blocks { margin-bottom: 16px; }
+.blocks-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.blocks-label { font-size: 12px; color: #666; width: 36px; flex-shrink: 0; }
+.blocks-list { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+.block {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+.block:active { cursor: grabbing; }
+.block.dragging { opacity: 0.5; transform: scale(0.95); }
+.clip-block { background: #667eea; color: white; }
+.gap-block { background: #f0f0f0; color: #666; }
+.gap-block[data-gap-type="ai_fill"] { 
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.3)); 
+    color: #7c3aed;
+}
+.gap-block i { width: 12px; height: 12px; }
+.gap-add-btn {
+    background: #fff;
+    border: 2px dashed #667eea;
+    color: #667eea;
+    padding: 8px 12px;
+}
+.gap-add-btn i { width: 14px; height: 14px; }
+
+/* ==================== Drop Zone ==================== */
+.timeline-drop {
+    min-height: 60px;
+    background: #f8f9fa;
+    border: 2px dashed #d0d0d0;
+    border-radius: 12px;
+    padding: 12px;
+    transition: all 0.2s;
+    position: relative;
+}
+.timeline-drop.drag-over {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+.timeline-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #999;
+    font-size: 13px;
+    padding: 12px;
+}
+.timeline-placeholder i { width: 16px; height: 16px; }
+
+/* ==================== Timeline Items ==================== */
+.timeline-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.timeline-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: grab;
+    position: relative;
+}
+.timeline-item:active { cursor: grabbing; }
+.timeline-item.clip-item { background: #667eea; color: white; }
+.timeline-item.gap-item { background: #e0e0e0; color: #666; }
+.timeline-item.gap-item i { width: 12px; height: 12px; }
+
+/* Drop indicators */
+.timeline-item.drop-before::before,
+.timeline-item.drop-after::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 4px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.6);
+}
+.timeline-item.drop-before::before { left: -8px; }
+.timeline-item.drop-after::after { right: -8px; }
+.timeline-item.drop-before, .timeline-item.drop-after { transform: scale(0.95); }
+
+/* ==================== Timeline Trash ==================== */
+.timeline-trash {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 36px;
+    height: 36px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s;
+    pointer-events: none;
+}
+.timeline-trash i { width: 18px; height: 18px; color: #999; }
+.timeline-trash.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+.timeline-trash.hover {
+    background: #fee2e2;
+    transform: scale(1.2);
+}
+.timeline-trash.hover i { color: #ef4444; }
+
+/* ==================== Timeline Actions ==================== */
+.timeline-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+}
+.btn-clear {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.btn-clear i { width: 14px; height: 14px; }
+.timeline-total { font-size: 13px; color: #666; }
+.timeline-total span { font-weight: 600; color: #667eea; }
+
+/* ==================== Preview Section ==================== */
+.preview-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed #e0e0e0;
+}
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.preview-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.preview-title i { width: 16px; height: 16px; color: #667eea; }
+.preview-duration {
+    font-size: 13px;
+    color: #667eea;
+    font-weight: 600;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+.preview-waveform-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 10px;
+    min-height: 50px;
+}
+.preview-waveform-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    gap: 6px;
+}
+.preview-waveform { height: 50px; }
+.preview-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.preview-play-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+
+/* ==================== Preview Segments ==================== */
+.preview-segments {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.preview-seg {
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+.preview-seg-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    filter: brightness(0.7);
+    transition: width 0.1s linear;
+}
+
+/* ==================== Timeline Item Progress ==================== */
+.timeline-item .item-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    background: rgba(0,0,0,0.15);
+    border-radius: 8px 0 0 8px;
+    transition: width 0.1s linear;
+    pointer-events: none;
+}
+.timeline-item.played .item-progress { width: 100%; border-radius: 8px; }
+.timeline-item.playing { box-shadow: 0 0 12px rgba(102, 126, 234, 0.5); }
+.timeline-item:not(.played):not(.playing) { opacity: 0.6; }
+.timeline-item.played, .timeline-item.playing { opacity: 1; }
+
+/* ==================== Delete Hint & Effect ==================== */
+.delete-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: rgba(239, 68, 68, 0.95);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 10000;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+}
+.delete-hint i { width: 18px; height: 18px; }
+.delete-hint.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+@keyframes delete-poof {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+.delete-effect {
+    position: fixed;
+    font-size: 32px;
+    transform: translate(-50%, -50%);
+    animation: delete-poof 0.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 10001;
+}

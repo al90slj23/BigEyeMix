@@ -1,0 +1,147 @@
+/**
+ * Muggle.effects.css - AI 特效、彩虹动画、烟花
+ * BigEyeMix 麻瓜模式
+ */
+
+/* ==================== AI Fill Rainbow Animation ==================== */
+@keyframes rainbow-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+@keyframes rainbow-pulse {
+    0%, 100% { opacity: 0.8; filter: brightness(1); }
+    50% { opacity: 1; filter: brightness(1.2); }
+}
+
+@keyframes firework-burst {
+    0% { transform: scale(0); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+/* ==================== Timeline AI Fill Loading State ==================== */
+.timeline-item.gap-ai_fill.ai-loading {
+    position: relative;
+    border: none !important;
+    background: #fff;
+    overflow: visible;
+    z-index: 1;
+}
+
+.timeline-item.gap-ai_fill.ai-loading::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, 
+        #ff0000, #ff7f00, #ffff00, #00ff00, 
+        #00ffff, #0000ff, #8b00ff, #ff0000);
+    background-size: 200% 100%;
+    animation: rainbow-flow 1.5s linear infinite;
+    z-index: -1;
+}
+
+.timeline-item.gap-ai_fill.ai-loading::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 8px;
+    background: white;
+    z-index: -1;
+}
+
+.timeline-item.gap-ai_fill.ai-loading .item-label i {
+    animation: spin 1s linear infinite;
+}
+
+/* ==================== AI Fill Complete State ==================== */
+.timeline-item.gap-ai_fill.ai-complete {
+    position: relative;
+    border: none !important;
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    color: white !important;
+    overflow: visible;
+}
+
+.timeline-item.gap-ai_fill.ai-complete .item-label {
+    color: white;
+}
+
+.timeline-item.gap-ai_fill.ai-complete .item-label i {
+    color: white;
+}
+
+/* ==================== Firework Effect ==================== */
+.firework-container {
+    position: absolute;
+    inset: -20px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.firework {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: firework-burst 0.8s ease-out forwards;
+}
+
+.sparkle-star {
+    position: absolute;
+    font-size: 12px;
+    animation: sparkle 0.6s ease-out forwards;
+}
+
+/* ==================== Preview Segment Rainbow Effects ==================== */
+
+/* AI 填充段 - 等待中：彩虹流动 */
+.preview-seg.ai-fill-seg.ai-loading {
+    background: linear-gradient(90deg, 
+        #ff0000, #ff7f00, #ffff00, #00ff00, 
+        #00ffff, #0000ff, #8b00ff, #ff0000) !important;
+    background-size: 200% 100% !important;
+    animation: rainbow-flow 2s linear infinite;
+    position: relative;
+    opacity: 1 !important;
+}
+
+.preview-seg.ai-fill-seg.ai-loading::after {
+    content: '✨';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8px;
+    animation: spin 2s linear infinite;
+}
+
+/* AI 填充段 - 完成：彩虹脉冲闪烁 */
+.preview-seg.ai-fill-seg.ai-complete {
+    background: linear-gradient(90deg, 
+        #667eea, #764ba2, #f093fb, #f5576c, 
+        #4facfe, #667eea) !important;
+    background-size: 300% 100% !important;
+    animation: rainbow-flow 3s linear infinite, rainbow-pulse 1.5s ease-in-out infinite;
+    position: relative;
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.5);
+    opacity: 1 !important;
+}
+
+.preview-seg.ai-fill-seg.ai-complete::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255,255,255,0.3) 50%, 
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: rainbow-flow 1s linear infinite;
+}

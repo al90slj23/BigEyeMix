@@ -1,0 +1,103 @@
+/**
+ * Muggle.upload.css - 上传相关样式
+ * BigEyeMix 麻瓜模式
+ */
+
+/* ==================== Upload List ==================== */
+.upload-list { display: flex; flex-direction: column; gap: 12px; }
+.upload-item {
+    border: 2px dashed #d0d0d0;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.upload-item:active { transform: scale(0.98); }
+.upload-item.has-file {
+    border-color: #22c55e;
+    border-style: solid;
+    background: rgba(34, 197, 94, 0.05);
+}
+.upload-item .icon {
+    width: 40px;
+    height: 40px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.upload-item .icon i { width: 20px; height: 20px; color: #667eea; }
+.upload-item .info { flex: 1; min-width: 0; }
+.upload-item .label { font-size: 14px; font-weight: 600; color: #333; }
+.upload-item .meta { font-size: 12px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upload-item .remove-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #fee2e2;
+    border-radius: 8px;
+    cursor: pointer;
+    display: none;
+}
+.upload-item.has-file .remove-btn { display: flex; align-items: center; justify-content: center; }
+.upload-item .remove-btn i { width: 16px; height: 16px; color: #ef4444; }
+
+/* ==================== Upload Progress ==================== */
+.upload-item.uploading {
+    border-color: #667eea;
+    border-style: solid;
+    background: rgba(102, 126, 234, 0.05);
+}
+.upload-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e0e0e0;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+.upload-status { color: #667eea; font-weight: 500; }
+.progress-bar-mini {
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 2px;
+    transition: width 0.3s;
+}
+.progress-fill.indeterminate {
+    width: 30% !important;
+    animation: indeterminate 1.5s infinite ease-in-out;
+}
+@keyframes indeterminate {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+}
+
+/* ==================== Add Upload Button ==================== */
+.add-upload-btn {
+    border: 2px dashed #667eea;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    color: #667eea;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.add-upload-btn i { width: 18px; height: 18px; }
+.add-upload-btn:active { transform: scale(0.98); }

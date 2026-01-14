@@ -1,0 +1,448 @@
+/**
+ * Muggle.editor.css - 编辑器、波形、片段样式
+ * BigEyeMix 麻瓜模式
+ */
+
+/* ==================== Track Editor ==================== */
+.track-editor { 
+    margin-bottom: 16px;
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.track-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px; /* 增加与主波形的间距，给标尺预留空间 */
+}
+.track-label {
+    width: 28px;
+    height: 28px;
+    background: #667eea;
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+}
+.track-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.track-duration { font-size: 12px; color: #999; }
+
+/* ==================== Waveform ==================== */
+.waveform-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    min-height: 80px;
+}
+.waveform { 
+    height: 60px;
+}
+.waveform-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    gap: 8px;
+}
+.waveform-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #e0e0e0;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+.waveform-loading-text { font-size: 12px; color: #999; }
+.waveform-error { color: #ef4444; font-size: 12px; }
+
+/* ==================== Playback Controls ==================== */
+.playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.play-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #667eea;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.play-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.play-btn i { width: 18px; height: 18px; }
+.time-display {
+    height: 36px;
+    padding: 0 14px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    font-family: monospace;
+}
+.seek-time {
+    height: 36px;
+    padding: 0 12px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #999;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: monospace;
+    margin-left: auto;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s;
+}
+.seek-time:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+}
+.seek-time.dragging { opacity: 0.5; }
+.seek-time i { width: 14px; height: 14px; color: #667eea; }
+
+/* ==================== Clips ==================== */
+.clips-list { display: flex; flex-direction: column; gap: 8px; }
+.clip-item {
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+}
+.clip-tag {
+    background: #667eea;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.clip-times { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column;
+    gap: 6px;
+}
+.clip-time-input { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px;
+}
+.clip-time-input span { 
+    font-size: 13px; 
+    color: #666; 
+    width: 20px;
+    flex-shrink: 0;
+}
+.clip-time-input input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: monospace;
+    text-align: left;
+    background: white;
+}
+.clip-time-input input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+.clip-time-input input.drop-target {
+    background: rgba(102, 126, 234, 0.2) !important;
+    border-color: #667eea !important;
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.4);
+}
+.clip-remove {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: #fee2e2;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    flex-shrink: 0;
+}
+.clip-remove i { width: 14px; height: 14px; color: #ef4444; }
+
+.add-clip-btn {
+    border: 1px dashed #667eea;
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    color: #667eea;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.add-clip-btn i { width: 14px; height: 14px; }
+
+
+/* ==================== Waveform Zoom ==================== */
+.waveform-wrapper {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.waveform-main {
+    flex: 1;
+    position: relative;
+    overflow: visible; /* 允许标尺超出显示 */
+    min-width: 0; /* 允许flex子元素收缩 */
+}
+
+.waveform-main .waveform-container {
+    margin-bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    width: 100%; /* 限制宽度 */
+}
+
+.waveform-zoom-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-top: 8px;
+}
+
+.zoom-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.zoom-btn i {
+    width: 16px;
+    height: 16px;
+}
+
+.zoom-btn:active {
+    transform: scale(0.95);
+    background: #e0e0e0;
+}
+
+/* ==================== Waveform Ruler (标尺卡) ==================== */
+.waveform-ruler {
+    position: absolute;
+    top: -18px;  /* 超出容器顶部 */
+    bottom: -18px; /* 超出容器底部 */
+    left: 0;
+    width: 2px;
+    background: #667eea;
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* 顶部圆球手柄 */
+.waveform-ruler .ruler-handle {
+    position: absolute;
+    top: 0;
+    left: -11px;
+    width: 24px;
+    height: 24px;
+    background: #667eea;
+    border-radius: 50%;
+    cursor: grab;
+    pointer-events: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 101;
+}
+
+.waveform-ruler .ruler-handle::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+}
+
+/* 底部圆球 */
+.waveform-ruler::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -11px;
+    width: 24px;
+    height: 24px;
+    background: inherit;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.waveform-ruler.dragging .ruler-handle {
+    transform: scale(1.15);
+    cursor: grabbing;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.5);
+}
+
+/* ==================== Scroll Edge Indicators ==================== */
+.scroll-edge {
+    position: absolute;
+    top: 12px;
+    bottom: 0;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 15;
+}
+
+.scroll-edge.show {
+    opacity: 1;
+}
+
+.scroll-edge-left {
+    left: 0;
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.4), transparent);
+    border-radius: 10px 0 0 10px;
+}
+
+.scroll-edge-right {
+    right: 40px;
+    background: linear-gradient(-90deg, rgba(102, 126, 234, 0.4), transparent);
+    border-radius: 0 10px 10px 0;
+}
+
+.scroll-edge i {
+    width: 18px;
+    height: 18px;
+    color: #667eea;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* ==================== Waveform Navigator (导航条) ==================== */
+.waveform-navigator {
+    position: relative;
+    height: 32px;
+    background: #f0f0f0;
+    border-radius: 6px;
+    margin-top: 20px;  /* 增加与主波形的间距，给标尺预留空间 */
+    margin-bottom: 10px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.navigator-wave {
+    width: 100%;
+    height: 24px;
+    margin-top: 4px;
+}
+
+.navigator-viewport {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 0;
+    width: 100%;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    background: rgba(102, 126, 234, 0.15);
+    pointer-events: none;
+    box-shadow: inset 0 0 8px rgba(102, 126, 234, 0.2);
+    /* 默认显示，宽度100%表示未放大 */
+}
+
+.navigator-cursor {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2px;
+    background: #667eea;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.navigator-cursor::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -3px;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    border-radius: 50%;
+}
+
+.navigator-cursor::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: -3px;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    border-radius: 50%;
+}
+
+.waveform-navigator:active {
+    background: #e8e8e8;
+}
+
+.waveform-navigator:active .navigator-viewport {
+    border-color: #764ba2;
+    background: rgba(118, 75, 162, 0.15);
+}
