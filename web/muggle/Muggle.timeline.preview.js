@@ -43,23 +43,38 @@ async function stitchWaveformData(segments) {
             // 获取完整音频的波形数据
             try {
                 const response = await axios.get(API_BASE + `/api/uploads/${seg.file_id}/waveform`);
-                if (response.data.success && response.data.waveform) {
-                    const fullWaveform = response.data.waveform;  // 这是数组
+                if (response.data.success && response.data.waveform && Array.isArray(response.data.waveform)) {
+                    const fullPeaks = response.data.waveform;  // 直接使用 waveform 数组
                     const fullDuration = response.data.duration;
-                    const fullPeaks = fullWaveform;  // 直接使用 waveform 数组
                     
-                    // 计算片段在完整波形中的采样点范围
-                    const startRatio = seg.start / fullDuration;
-                    const endRatio = seg.end / fullDuration;
-                    const startIndex = Math.floor(startRatio * fullPeaks.length);
-                    const endIndex = Math.ceil(endRatio * fullPeaks.length);
-                    
-                    // 提取片段波形
-                    const segmentPeaks = fullPeaks.slice(startIndex, endIndex);
-                    stitchedPeaks.push(...segmentPeaks);
-                    totalSamples += segmentPeaks.length;
-                    
-                    console.log(`[Preview] Extracted ${segmentPeaks.length} peaks from ${seg.file_id} (${seg.start}s - ${seg.end}s)`);
+                    // 检查波形数据是否有效
+                    if (fullPeaks.length === 0) {
+                        console.log(`[Preview] Empty waveform for ${seg.file_id}, using placeholder`);
+                        const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                        stitchedPeaks.push(...new Array(estimatedSamples).fill(0.5));
+                        totalSamples += estimatedSamples;
+                    } else {
+                        // 计算片段在完整波形中的采样点范围
+                        const startRatio = seg.start / fullDuration;
+                        const endRatio = seg.end / fullDuration;
+                        const startIndex = Math.floor(startRatio * fullPeaks.length);
+                        const endIndex = Math.ceil(endRatio * fullPeaks.length);
+                        
+                        // 提取片段波形
+                        const segmentPeaks = fullPeaks.slice(startIndex, endIndex);
+                        
+                        if (segmentPeaks.length > 0) {
+                            stitchedPeaks.push(...segmentPeaks);
+                            totalSamples += segmentPeaks.length;
+                            console.log(`[Preview] Extracted ${segmentPeaks.length} peaks from ${seg.file_id} (${seg.start}s - ${seg.end}s)`);
+                        } else {
+                            // 提取结果为空，使用占位数据
+                            const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                            stitchedPeaks.push(...new Array(estimatedSamples).fill(0.5));
+                            totalSamples += estimatedSamples;
+                            console.log(`[Preview] Empty extraction for ${seg.file_id}, using placeholder`);
+                        }
+                    }
                 } else {
                     // 没有缓存波形，使用占位数据
                     const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
@@ -79,7 +94,7 @@ async function stitchWaveformData(segments) {
                 // 如果魔法填充已生成，获取其波形
                 try {
                     const response = await axios.get(API_BASE + `/api/uploads/${seg.magic_output_id}/waveform`);
-                    if (response.data.success && response.data.waveform) {
+                    if (response.data.success && response.data.waveform && Array.isArray(response.data.waveform) && response.data.waveform.length > 0) {
                         const magicPeaks = response.data.waveform;  // 直接使用 waveform 数组
                         stitchedPeaks.push(...magicPeaks);
                         totalSamples += magicPeaks.length;

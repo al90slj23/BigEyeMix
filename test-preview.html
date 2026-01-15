@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+</head>
+<body>
+    <h1>Preview Segments Test</h1>
+    <div id="result"></div>
+    
+    <script>
+        const API_BASE = 'https://bem.it.sc.cn';
+        
+        // 模拟 state
+        const state = {
+            tracks: [
+                {
+                    id: 1,
+                    label: 'A',
+                    color: { bg: '#ef4444' },
+                    uploaded: { file_id: '20260115100631_尘ah. - 知我抒情版202504042140.mp3' },
+                    clips: [{ id: 1, start: 0, end: 192.29 }]
+                },
+                {
+                    id: 2,
+                    label: 'B',
+                    color: { bg: '#f97316' },
+                    uploaded: { file_id: '20260115100616_黄诗扶-春颂 剪辑202501151920.flac' },
+                    clips: [{ id: 1, start: 0, end: 116.61 }]
+                }
+            ],
+            timeline: [
+                { type: 'clip', trackId: 1, clipId: 1 },
+                { type: 'transition', transitionType: 'magicfill', duration: 5, transitionId: 'trans_1', magicState: 'magic-loading' },
+                { type: 'clip', trackId: 2, clipId: 1 }
+            ]
+        };
+        
+        async function testPreview() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing preview segments...</p>';
+            
+            // 构建片段数据
+            const segments = [];
+            let currentTime = 0;
+            let totalDuration = 0;
+            
+            for (const item of state.timeline) {
+                if (item.type === 'clip') {
+                    const track = state.tracks.find(t => t.id === item.trackId);
+                    const clip = track.clips.find(c => c.id === item.clipId);
+                    const duration = clip.end - clip.start;
+                    
+                    segments.push({
+                        type: 'clip',
+                        file_id: track.uploaded.file_id,
+                        start: clip.start,
+                        end: clip.end,
+                        duration: duration,
+                        label: track.label + clip.id,
+                        color: track.color.bg
+                    });
+                    
+                    currentTime += duration;
+                    totalDuration += duration;
+                } else if (item.type === 'transition') {
+                    segments.push({
+                        type: 'transition',
+                        transition_type: item.transitionType,
+                        duration: item.duration,
+                        magic_output_id: item.magicOutputId || null,
+                        magicState: item.magicState,
+                        label: item.duration + 's',
+                        color: '#e0e0e0'
+                    });
+                    
+                    currentTime += item.duration;
+                    totalDuration += item.duration;
+                }
+            }
+            
+            resultDiv.innerHTML += `<p>Total duration: ${totalDuration}s</p>`;
+            resultDiv.innerHTML += `<p>Segments: ${segments.length}</p>`;
+            
+            // 测试波形数据拼接
+            const stitchedPeaks = [];
+            
+            for (const seg of segments) {
+                if (seg.type === 'clip') {
+                    try {
+                        resultDiv.innerHTML += `<p>Loading waveform for ${seg.file_id}...</p>`;
+                        const response = await axios.get(`${API_BASE}/api/uploads/${seg.file_id}/waveform`);
+                        
+                        if (response.data.success && response.data.waveform) {
+                            const fullPeaks = response.data.waveform;
+                            const fullDuration = response.data.duration;
+                            
+                            const startRatio = seg.start / fullDuration;
+                            const endRatio = seg.end / fullDuration;
+                            const startIndex = Math.floor(startRatio * fullPeaks.length);
+                            const endIndex = Math.ceil(endRatio * fullPeaks.length);
+                            
+                            const segmentPeaks = fullPeaks.slice(startIndex, endIndex);
+                            stitchedPeaks.push(...segmentPeaks);
+                            
+                            resultDiv.innerHTML += `<p>✅ Extracted ${segmentPeaks.length} peaks from ${seg.label}</p>`;
+                        }
+                    } catch (error) {
+                        resultDiv.innerHTML += `<p>❌ Failed to load ${seg.label}: ${error.message}</p>`;
+                        const estimatedSamples = Math.ceil((seg.duration / totalDuration) * 800);
+                        stitchedPeaks.push(...new Array(estimatedSamples).fill(0.5));
+                    }
+                } else if (seg.type === 'transition') {
+                    if (seg.transition_type === 'magicfill' && seg.magic_output_id) {
+                        resultDiv.innerHTML += `<p>Loading magic fill waveform...</p>`;
+                        // 已生成的魔法填充
+                    } else {
+                        // 占位数据
+                        const estimatedSamples = Math.ceil((seg.duration / totalDuration) * 800);
+                        const amplitude = seg.transition_type === 'silence' ? 0.05 : 0.3;
+                        stitchedPeaks.push(...new Array(estimatedSamples).fill(amplitude));
+                        resultDiv.innerHTML += `<p>✅ Added ${estimatedSamples} placeholder peaks for ${seg.label} (${seg.transition_type})</p>`;
+                    }
+                }
+            }
+            
+            if (stitchedPeaks.length === 0) {
+                resultDiv.innerHTML += `<p>⚠️ No peaks found, using placeholder</p>`;
+                stitchedPeaks.push(...new Array(800).fill(0.5));
+            }
+            
+            resultDiv.innerHTML += `<h2>Result:</h2>`;
+            resultDiv.innerHTML += `<p>Total stitched peaks: ${stitchedPeaks.length}</p>`;
+            resultDiv.innerHTML += `<p>Duration: ${totalDuration}s</p>`;
+            
+            // 显示片段信息
+            resultDiv.innerHTML += `<h3>Segments:</h3>`;
+            let time = 0;
+            for (const seg of segments) {
+                const width = (seg.duration / totalDuration) * 100;
+                resultDiv.innerHTML += `
+                    <div style="display:inline-block; width:${width}%; height:40px; background:${seg.color}; 
+                                border:1px solid #333; text-align:center; line-height:40px; color:white; font-size:12px;">
+                        ${seg.label}
+                    </div>
+                `;
+                time += seg.duration;
+            }
+            
+            // 测试 WaveSurfer 加载
+            resultDiv.innerHTML += `<h3>Waveform Preview:</h3>`;
+            resultDiv.innerHTML += `<div id="waveform" style="width:100%; height:128px; border:1px solid #ccc;"></div>`;
+            
+            const wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: '#a78bfa',
+                progressColor: '#667eea',
+                height: 128,
+                barWidth: 2,
+                barGap: 1,
+                normalize: true
+            });
+            
+            const dummyUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+            wavesurfer.load(dummyUrl, [stitchedPeaks], totalDuration);
+            
+            wavesurfer.on('ready', () => {
+                resultDiv.innerHTML += `<p>✅ WaveSurfer loaded successfully!</p>`;
+            });
+            
+            wavesurfer.on('error', (err) => {
+                resultDiv.innerHTML += `<p>❌ WaveSurfer error: ${err.message}</p>`;
+            });
+        }
+        
+        // 自动运行测试
+        testPreview();
+    </script>
+</body>
+</html>
