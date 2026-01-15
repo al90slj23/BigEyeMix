@@ -104,15 +104,13 @@ function renderEditorAndTimeline() {
             
             <div class="blocks-row">
                 <div class="blocks-label">拼接</div>
-                <div style="flex: 1;">
-                    <div class="timeline-drop" id="timelineDrop">
-                        <div class="timeline-placeholder" id="timelinePlaceholder">
-                            <i data-lucide="arrow-down"></i> 拖拽片段到这里
-                        </div>
-                        <div class="timeline-items" id="timelineItems"></div>
-                        <div class="timeline-trash" id="timelineTrash">
-                            <i data-lucide="trash-2"></i>
-                        </div>
+                <div class="timeline-drop" id="timelineDrop" style="flex: 1;">
+                    <div class="timeline-placeholder" id="timelinePlaceholder">
+                        <i data-lucide="arrow-down"></i> 拖拽片段到这里
+                    </div>
+                    <div class="timeline-items" id="timelineItems"></div>
+                    <div class="timeline-trash" id="timelineTrash">
+                        <i data-lucide="trash-2"></i>
                     </div>
                 </div>
             </div>
