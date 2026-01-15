@@ -9,7 +9,7 @@
  */
 
 let customTransitions = [];  // { duration, type }
-let selectedTransitionType = 'magicfill';
+let selectedTransitionType = 'crossfade';
 
 function renderClipBlocks() {
     const container = document.getElementById('clipBlocks');

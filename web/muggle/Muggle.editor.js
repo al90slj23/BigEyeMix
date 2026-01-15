@@ -92,11 +92,18 @@ function renderEditorAndTimeline() {
                 <div class="blocks-row">
                     <div class="blocks-label">处理</div>
                     <div class="blocks-list" id="transitionBlocks">
-                        ${(typeof transitionPresets !== 'undefined' ? transitionPresets : [1, 3, 5, 10]).map(sec => `
-                            <div class="block transition-block" draggable="true" data-type="transition" data-duration="${sec}" data-transition-type="magicfill">
-                                <i data-lucide="sparkles"></i> ${sec}s
-                            </div>
-                        `).join('')}
+                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="crossfade">
+                            <i data-lucide="git-merge"></i> 3s
+                        </div>
+                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="beatsync">
+                            <i data-lucide="activity"></i> 3s
+                        </div>
+                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="magicfill">
+                            <i data-lucide="sparkles"></i> 3s
+                        </div>
+                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="silence">
+                            <i data-lucide="volume-x"></i> 3s
+                        </div>
                         <div class="block transition-add-btn" onclick="showCustomTransitionModal()">
                             <i data-lucide="plus"></i>
                         </div>

@@ -16,16 +16,16 @@ const state = {
     previewWavesurfer: null
 };
 
-// 处理块类型（顺序：魔法填充 > 节拍过渡 > 淡化过渡 > 静音填充）
+// 处理块类型（顺序：淡化过渡 > 节拍过渡 > 魔法填充 > 静音填充）
 const transitionTypes = {
-    magicfill: { name: '魔法填充',  icon: 'sparkles',    color: '#8b5cf6', desc: '智能生成过渡音频' },
-    beatsync:  { name: '节拍过渡',  icon: 'activity',    color: '#ec4899', desc: '基于BPM节拍对齐' },
     crossfade: { name: '淡化过渡',  icon: 'git-merge',   color: '#f59e0b', desc: '平滑音量渐变' },
+    beatsync:  { name: '节拍过渡',  icon: 'activity',    color: '#ec4899', desc: '基于BPM节拍对齐' },
+    magicfill: { name: '魔法填充',  icon: 'sparkles',    color: '#8b5cf6', desc: '智能生成过渡音频' },
     silence:   { name: '静音填充',  icon: 'volume-x',    color: '#6b7280', desc: '无声过渡' }
 };
 
 // 处理类型顺序
-const transitionTypeOrder = ['magicfill', 'beatsync', 'crossfade', 'silence'];
+const transitionTypeOrder = ['crossfade', 'beatsync', 'magicfill', 'silence'];
 
 // 预设处理块（秒）- 默认使用魔法填充
 const transitionPresets = [1, 3, 5, 10];
