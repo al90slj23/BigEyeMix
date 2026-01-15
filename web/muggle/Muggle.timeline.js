@@ -5,11 +5,11 @@
  * 依赖文件:
  * - Muggle.timeline.drag.js (拖拽处理)
  * - Muggle.timeline.preview.js (预览波形)
- * - Muggle.timeline.ai.js (AI 填充)
+ * - Muggle.timeline.magic.js (魔法填充)
  */
 
-let customGaps = [];
-let selectedGapType = 'ai_fill';
+let customTransitions = [];  // { duration, type }
+let selectedTransitionType = 'magicfill';
 
 function renderClipBlocks() {
     const container = document.getElementById('clipBlocks');
@@ -52,13 +52,13 @@ function renderTimeline() {
                         <span class="item-label">${track.label}${item.clipId}</span>
                     </div>
                 `;
-            } else if (item.type === 'gap') {
-                const gapType = item.gapType || 'ai_fill';
-                const gapInfo = gapTypes[gapType] || gapTypes.ai_fill;
-                const aiState = item.aiState || (gapType === 'ai_fill' ? 'ai-loading' : '');
+            } else if (item.type === 'transition') {
+                const transType = item.transitionType || 'magicfill';
+                const transInfo = transitionTypes[transType] || transitionTypes.magicfill;
+                const magicState = item.magicState || (transType === 'magicfill' ? 'magic-loading' : '');
                 return `
-                    <div class="timeline-item gap-item gap-${gapType} ${aiState}" data-index="${index}" data-gap-id="${item.gapId || ''}" style="border-left: 3px solid ${gapInfo.color}">
-                        <span class="item-label"><i data-lucide="${gapInfo.icon}"></i> ${item.duration}s</span>
+                    <div class="timeline-item transition-item transition-${transType} ${magicState}" data-index="${index}" data-transition-id="${item.transitionId || ''}" style="border-left: 3px solid ${transInfo.color}">
+                        <span class="item-label"><i data-lucide="${transInfo.icon}"></i> ${item.duration}s</span>
                     </div>
                 `;
             }
@@ -95,7 +95,7 @@ function updateTotalDuration() {
                 const clip = track.clips.find(c => c.id === item.clipId);
                 if (clip) total += clip.end - clip.start;
             }
-        } else if (item.type === 'gap') {
+        } else if (item.type === 'transition') {
             total += item.duration;
         }
     });
@@ -103,61 +103,66 @@ function updateTotalDuration() {
     document.getElementById('totalDuration').textContent = formatTime(total);
 }
 
-// ==================== 自定义间隔 ====================
+// ==================== 自定义过渡 ====================
 
-window.showCustomGapModal = function() {
-    document.getElementById('customGapModal').classList.add('show');
-    document.getElementById('customGapInput').focus();
+window.showCustomTransitionModal = function() {
+    document.getElementById('customTransitionModal').classList.add('show');
+    document.getElementById('customTransitionInput').focus();
     refreshIcons();
 };
 
-window.closeCustomGapModal = function() {
-    document.getElementById('customGapModal').classList.remove('show');
+window.closeCustomTransitionModal = function() {
+    document.getElementById('customTransitionModal').classList.remove('show');
 };
 
-window.addCustomGap = function() {
-    const input = document.getElementById('customGapInput');
+window.addCustomTransition = function() {
+    const input = document.getElementById('customTransitionInput');
     const duration = parseInt(input.value);
-    const gapType = getSelectedGapType();
+    const transType = getSelectedTransitionType();
     
     if (isNaN(duration) || duration < 1 || duration > 30) {
         alert('请输入 1 ~ 30 秒之间的数值');
         return;
     }
     
-    const gapItem = { 
-        type: 'gap', 
-        duration: duration, 
-        gapType: gapType,
-        gapId: generateGapId()
-    };
+    // 添加自定义过渡块（允许重复时长，因为可能是不同类型）
+    customTransitions.push({ duration, type: transType });
+    renderTransitionBlocks();
     
-    state.timeline.push(gapItem);
-    renderTimeline();
-    
-    if (gapType === 'ai_fill') {
-        setTimeout(() => checkAndStartAiFillTasks(), 100);
-    }
-    
-    closeCustomGapModal();
+    closeCustomTransitionModal();
 };
 
-function renderGapBlocks() {
-    const container = document.getElementById('gapBlocks');
+function renderTransitionBlocks() {
+    const container = document.getElementById('transitionBlocks');
     if (!container) return;
     
-    const allGaps = [...gapPresets, ...customGaps].sort((a, b) => a - b);
+    const presets = typeof transitionPresets !== 'undefined' ? transitionPresets : [1, 3, 5, 10];
     
-    container.innerHTML = allGaps.map(sec => `
-        <div class="block gap-block" draggable="true" data-type="gap" data-duration="${sec}" data-gap-type="ai_fill">
+    // 预设块（默认魔法填充）
+    let html = presets.map(sec => `
+        <div class="block transition-block" draggable="true" data-type="transition" data-duration="${sec}" data-transition-type="magicfill">
             <i data-lucide="sparkles"></i> ${sec}s
         </div>
-    `).join('') + `
-        <div class="block gap-add-btn" onclick="showCustomGapModal()">
+    `).join('');
+    
+    // 自定义块（带类型）
+    html += customTransitions.map((item, idx) => {
+        const info = transitionTypes[item.type] || transitionTypes.magicfill;
+        return `
+            <div class="block transition-block transition-block-${item.type}" draggable="true" data-type="transition" data-duration="${item.duration}" data-transition-type="${item.type}">
+                <i data-lucide="${info.icon}"></i> ${item.duration}s
+            </div>
+        `;
+    }).join('');
+    
+    // 添加按钮
+    html += `
+        <div class="block transition-add-btn" onclick="showCustomTransitionModal()">
             <i data-lucide="plus"></i>
         </div>
     `;
     
+    container.innerHTML = html;
     refreshIcons();
     initDragAndDrop();
 }

@@ -25,9 +25,27 @@
 
 /* ==================== Available Blocks ==================== */
 .available-blocks { margin-bottom: 16px; }
-.blocks-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.blocks-label { font-size: 12px; color: #666; width: 36px; flex-shrink: 0; }
-.blocks-list { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+.blocks-row { 
+    display: flex; 
+    align-items: flex-start; 
+    gap: 10px; 
+    margin-bottom: 12px; 
+}
+.blocks-label { 
+    font-size: 12px; 
+    color: #666; 
+    width: 36px; 
+    flex-shrink: 0;
+    padding-top: 10px;
+    line-height: 1;
+}
+.blocks-list { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+    flex: 1;
+    min-height: 36px;
+}
 .block {
     padding: 8px 14px;
     border-radius: 8px;
@@ -42,19 +60,76 @@
 .block:active { cursor: grabbing; }
 .block.dragging { opacity: 0.5; transform: scale(0.95); }
 .clip-block { background: #667eea; color: white; }
-.gap-block { background: #f0f0f0; color: #666; }
-.gap-block[data-gap-type="ai_fill"] { 
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.3)); 
-    color: #7c3aed;
-}
-.gap-block i { width: 12px; height: 12px; }
-.gap-add-btn {
+.transition-block { background: #f0f0f0; color: #666; }
+.transition-block i { width: 12px; height: 12px; }
+.transition-add-btn {
     background: #fff;
     border: 2px dashed #667eea;
     color: #667eea;
     padding: 8px 12px;
 }
-.gap-add-btn i { width: 14px; height: 14px; }
+.transition-add-btn i { width: 14px; height: 14px; }
+
+/* ==================== 过渡块动态效果（复用弹窗样式） ==================== */
+
+/* 魔法填充 - 彩虹渐变流动 */
+.transition-block[data-transition-type="magicfill"] {
+    background: linear-gradient(90deg, 
+        rgba(255,0,0,0.15), 
+        rgba(255,165,0,0.15), 
+        rgba(255,255,0,0.15), 
+        rgba(0,255,0,0.15), 
+        rgba(0,255,255,0.15), 
+        rgba(0,0,255,0.15), 
+        rgba(139,0,255,0.15));
+    background-size: 200% 100%;
+    animation: rainbowFlow 4s linear infinite;
+    color: #8b5cf6;
+}
+
+/* 节拍对齐 - 脉冲波动 */
+.transition-block[data-transition-type="beatsync"] {
+    background: rgba(236, 72, 153, 0.15);
+    animation: beatBlockBg 1.2s ease-in-out infinite;
+    color: #ec4899;
+}
+@keyframes beatBlockBg {
+    0%, 100% { background: rgba(236, 72, 153, 0.1); transform: scale(1); }
+    50% { background: rgba(236, 72, 153, 0.25); transform: scale(1.02); }
+}
+
+/* 淡出淡入 - 呼吸渐变 */
+.transition-block[data-transition-type="crossfade"] {
+    background: linear-gradient(90deg, 
+        rgba(255,255,255,0.9) 0%, 
+        rgba(245, 158, 11, 0.25) 50%, 
+        rgba(255,255,255,0.9) 100%);
+    background-size: 200% 100%;
+    animation: fadeBlockBreath 3s ease-in-out infinite;
+    color: #f59e0b;
+}
+@keyframes fadeBlockBreath {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* 休止静音 - 斜线条纹移动 */
+.transition-block[data-transition-type="silence"] {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(107, 114, 128, 0.08),
+        rgba(107, 114, 128, 0.08) 4px,
+        rgba(107, 114, 128, 0.18) 4px,
+        rgba(107, 114, 128, 0.18) 8px
+    );
+    background-size: 16px 16px;
+    animation: stripeBlockMove 2s linear infinite;
+    color: #6b7280;
+}
+@keyframes stripeBlockMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 16px 16px; }
+}
 
 /* ==================== Drop Zone ==================== */
 .timeline-drop {
@@ -96,8 +171,8 @@
 }
 .timeline-item:active { cursor: grabbing; }
 .timeline-item.clip-item { background: #667eea; color: white; }
-.timeline-item.gap-item { background: #e0e0e0; color: #666; }
-.timeline-item.gap-item i { width: 12px; height: 12px; }
+.timeline-item.transition-item { background: #e0e0e0; color: #666; }
+.timeline-item.transition-item i { width: 12px; height: 12px; }
 
 /* Drop indicators */
 .timeline-item.drop-before::before,
@@ -165,6 +240,72 @@
 .timeline-total { font-size: 13px; color: #666; }
 .timeline-total span { font-weight: 600; color: #667eea; }
 
+/* ==================== Magic Status Box ==================== */
+.magic-status-box {
+    margin-top: 12px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(102, 126, 234, 0.08));
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 12px;
+}
+.magic-status-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #8b5cf6;
+}
+.magic-status-header i { width: 14px; height: 14px; }
+.magic-status-badge {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+}
+.magic-status-badge.processing {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+.magic-status-badge.completed {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+.magic-status-badge.failed {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+.magic-status-logs {
+    max-height: 120px;
+    overflow-y: auto;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #666;
+}
+.magic-status-logs .log-item {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+}
+.magic-status-logs .log-time {
+    color: #999;
+    flex-shrink: 0;
+}
+.magic-status-logs .log-msg { flex: 1; }
+.magic-status-logs .log-msg.success { color: #22c55e; }
+.magic-status-logs .log-msg.error { color: #ef4444; }
+.magic-status-logs .log-msg.info { color: #8b5cf6; }
+
 /* ==================== Preview Section ==================== */
 .preview-section {
     margin-top: 16px;
@@ -175,7 +316,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 20px;
 }
 .preview-title {
     font-size: 14px;
@@ -194,32 +335,23 @@
     padding: 4px 10px;
     border-radius: 12px;
 }
-.preview-waveform-container {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 10px;
-    min-height: 50px;
-}
-.preview-waveform-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 50px;
-    gap: 6px;
-}
-.preview-waveform { height: 50px; }
-.preview-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-.preview-play-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 
-/* ==================== Preview Segments ==================== */
+/* 预览区域特有样式（其他复用 waveform-wrapper 等通用样式） */
 .preview-segments {
+    position: absolute;
+    top: 10px;
+    left: 13px;
+    right: 10px;
+    height: 60px;
     display: flex;
-    height: 8px;
     border-radius: 4px;
     overflow: hidden;
-    margin-bottom: 6px;
+    pointer-events: none;
+    z-index: 1;
 }
+.preview-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+
+/* ==================== Preview Segments ==================== */
 .preview-seg {
     height: 100%;
     position: relative;

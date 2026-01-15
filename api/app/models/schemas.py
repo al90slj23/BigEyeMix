@@ -15,16 +15,18 @@ class SegmentInfo(BaseModel):
     file_id: str = Field(..., description="File ID of the audio")
     start: float = Field(0, ge=0, description="Start time in seconds")
     end: float = Field(..., ge=0, description="End time in seconds")
-    # 间隔块类型: ai_fill, silence, crossfade, beatmatch
-    gap_type: Optional[str] = Field(None, description="Gap type for __gap__ segments")
+    # 过渡块类型: magicfill, silence, crossfade, beatsync
+    transition_type: Optional[str] = Field(None, description="Transition type for __transition__ segments")
+    # 兼容旧版 gap_type
+    gap_type: Optional[str] = Field(None, description="Legacy: Gap type for __gap__ segments")
 
 class MultiMixRequest(BaseModel):
     segments: List[SegmentInfo] = Field(..., description="List of audio segments to mix")
     transition_duration: float = Field(2.0, ge=0, le=10, description="Transition duration between segments")
-    transition_type: str = Field("crossfade", description="Type of transition: crossfade, cut, beatmatch")
+    transition_type: str = Field("crossfade", description="Type of transition: crossfade, cut, beatsync")
 
-class AIFillRequest(BaseModel):
-    """AI 填充请求 - 生成两段音频之间的过渡"""
+class MagicFillRequest(BaseModel):
+    """魔法填充请求 - 生成两段音频之间的过渡"""
     audio_file_id: str = Field(..., description="源音频文件 ID")
     audio_start: float = Field(0, ge=0, description="截取开始时间")
     audio_end: float = Field(..., ge=0, description="截取结束时间")

@@ -51,7 +51,7 @@ web/muggle/
 **内容**：
 - API 基础地址
 - 全局状态对象 `state`
-- 预设常量（如 `gapPresets`）
+- 预设常量（如 `transitionPresets`）
 - 配置项
 
 **行数限制**：50-100 行

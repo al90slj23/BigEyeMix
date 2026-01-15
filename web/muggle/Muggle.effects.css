@@ -1,9 +1,9 @@
 /**
- * Muggle.effects.css - AI 特效、彩虹动画、烟花
+ * Muggle.effects.css - 魔法填充特效、彩虹动画、烟花
  * BigEyeMix 麻瓜模式
  */
 
-/* ==================== AI Fill Rainbow Animation ==================== */
+/* ==================== Magic Fill Rainbow Animation ==================== */
 @keyframes rainbow-flow {
     0% { background-position: 0% 50%; }
     100% { background-position: 200% 50%; }
@@ -25,8 +25,8 @@
     50% { opacity: 1; transform: scale(1) rotate(180deg); }
 }
 
-/* ==================== Timeline AI Fill Loading State ==================== */
-.timeline-item.gap-ai_fill.ai-loading {
+/* ==================== Timeline Magic Fill Loading State ==================== */
+.timeline-item.transition-magicfill.magic-loading {
     position: relative;
     border: none !important;
     background: #fff;
@@ -34,7 +34,7 @@
     z-index: 1;
 }
 
-.timeline-item.gap-ai_fill.ai-loading::before {
+.timeline-item.transition-magicfill.magic-loading::before {
     content: '';
     position: absolute;
     inset: -3px;
@@ -47,7 +47,7 @@
     z-index: -1;
 }
 
-.timeline-item.gap-ai_fill.ai-loading::after {
+.timeline-item.transition-magicfill.magic-loading::after {
     content: '';
     position: absolute;
     inset: -1px;
@@ -56,12 +56,12 @@
     z-index: -1;
 }
 
-.timeline-item.gap-ai_fill.ai-loading .item-label i {
+.timeline-item.transition-magicfill.magic-loading .item-label i {
     animation: spin 1s linear infinite;
 }
 
-/* ==================== AI Fill Complete State ==================== */
-.timeline-item.gap-ai_fill.ai-complete {
+/* ==================== Magic Fill Complete State ==================== */
+.timeline-item.transition-magicfill.magic-complete {
     position: relative;
     border: none !important;
     background: linear-gradient(135deg, #667eea, #764ba2) !important;
@@ -69,11 +69,26 @@
     overflow: visible;
 }
 
-.timeline-item.gap-ai_fill.ai-complete .item-label {
+/* ==================== Magic Fill Failed State ==================== */
+.timeline-item.transition-magicfill.magic-failed {
+    position: relative;
+    border: 2px dashed #ef4444 !important;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+.timeline-item.transition-magicfill.magic-failed::after {
+    content: '⚠';
+    position: absolute;
+    right: -8px;
+    top: -8px;
+    font-size: 14px;
+}
+
+.timeline-item.transition-magicfill.magic-complete .item-label {
     color: white;
 }
 
-.timeline-item.gap-ai_fill.ai-complete .item-label i {
+.timeline-item.transition-magicfill.magic-complete .item-label i {
     color: white;
 }
 
@@ -101,8 +116,8 @@
 
 /* ==================== Preview Segment Rainbow Effects ==================== */
 
-/* AI 填充段 - 等待中：彩虹流动 */
-.preview-seg.ai-fill-seg.ai-loading {
+/* 魔法填充段 - 等待中：彩虹流动 */
+.preview-seg.magic-fill-seg.magic-loading {
     background: linear-gradient(90deg, 
         #ff0000, #ff7f00, #ffff00, #00ff00, 
         #00ffff, #0000ff, #8b00ff, #ff0000) !important;
@@ -112,7 +127,7 @@
     opacity: 1 !important;
 }
 
-.preview-seg.ai-fill-seg.ai-loading::after {
+.preview-seg.magic-fill-seg.magic-loading::after {
     content: '✨';
     position: absolute;
     left: 50%;
@@ -122,8 +137,8 @@
     animation: spin 2s linear infinite;
 }
 
-/* AI 填充段 - 完成：彩虹脉冲闪烁 */
-.preview-seg.ai-fill-seg.ai-complete {
+/* 魔法填充段 - 完成：彩虹脉冲闪烁 */
+.preview-seg.magic-fill-seg.magic-complete {
     background: linear-gradient(90deg, 
         #667eea, #764ba2, #f093fb, #f5576c, 
         #4facfe, #667eea) !important;
@@ -134,7 +149,7 @@
     opacity: 1 !important;
 }
 
-.preview-seg.ai-fill-seg.ai-complete::before {
+.preview-seg.magic-fill-seg.magic-complete::before {
     content: '';
     position: absolute;
     inset: 0;

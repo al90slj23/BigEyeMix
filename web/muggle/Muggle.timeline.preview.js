@@ -15,7 +15,8 @@ function updatePreviewWaveform() {
 async function doUpdatePreview() {
     const previewSection = document.getElementById('previewSection');
     const previewLoading = document.getElementById('previewLoading');
-    const previewWaveform = document.getElementById('previewWaveform');
+    const previewWaveformEl = document.getElementById('previewWaveform');
+    const previewSegmentsEl = document.getElementById('previewSegments');
     const previewPlayBtn = document.getElementById('previewPlayBtn');
     
     if (!previewSection || state.timeline.length === 0) {
@@ -25,18 +26,23 @@ async function doUpdatePreview() {
     
     previewSection.style.display = 'block';
     previewLoading.style.display = 'flex';
-    previewWaveform.style.display = 'none';
+    previewWaveformEl.style.display = 'none';
+    if (previewSegmentsEl) previewSegmentsEl.style.display = 'none';
     previewPlayBtn.disabled = true;
     
     if (state.previewWavesurfer) {
         state.previewWavesurfer.destroy();
         state.previewWavesurfer = null;
     }
+    if (state.previewNavigatorWavesurfer) {
+        state.previewNavigatorWavesurfer.destroy();
+        state.previewNavigatorWavesurfer = null;
+    }
     
     const segments = [];
     previewSegments = [];
     let currentTime = 0;
-    
+
     state.timeline.forEach((item, index) => {
         if (item.type === 'clip') {
             const track = state.tracks.find(t => t.id === item.trackId);
@@ -59,13 +65,13 @@ async function doUpdatePreview() {
                     currentTime += duration;
                 }
             }
-        } else if (item.type === 'gap') {
-            const gapType = item.gapType || 'ai_fill';
+        } else if (item.type === 'transition') {
+            const transType = item.transitionType || 'magicfill';
             segments.push({
-                file_id: '__gap__',
+                file_id: '__transition__',
                 start: 0,
                 end: item.duration,
-                gap_type: gapType
+                transition_type: transType
             });
             previewSegments.push({
                 index: index,
@@ -73,8 +79,8 @@ async function doUpdatePreview() {
                 end: currentTime + item.duration,
                 color: '#e0e0e0',
                 label: item.duration + 's',
-                isAiFill: gapType === 'ai_fill',
-                aiState: item.aiState || (gapType === 'ai_fill' ? 'ai-loading' : '')
+                isMagicFill: transType === 'magicfill',
+                magicState: item.magicState || (transType === 'magicfill' ? 'magic-loading' : '')
             });
             currentTime += item.duration;
         }
@@ -94,82 +100,7 @@ async function doUpdatePreview() {
         });
         
         const previewUrl = API_BASE + `/api/audio/${response.data.preview_id}`;
-        
-        previewWaveform.innerHTML = '<div class="preview-segments" id="previewSegments"></div><div class="preview-wave" id="previewWave"></div>';
-        
-        const wavesurfer = WaveSurfer.create({
-            container: document.getElementById('previewWave'),
-            waveColor: '#ddd',
-            progressColor: '#667eea',
-            cursorColor: '#764ba2',
-            height: 50,
-            barWidth: 2,
-            barGap: 1,
-            barRadius: 2,
-            normalize: true,
-            interact: true
-        });
-        
-        wavesurfer.load(previewUrl);
-        state.previewWavesurfer = wavesurfer;
-        
-        wavesurfer.on('ready', () => {
-            previewLoading.style.display = 'none';
-            previewWaveform.style.display = 'block';
-            previewPlayBtn.disabled = false;
-            
-            previewTotalDuration = wavesurfer.getDuration();
-            document.getElementById('previewDuration').textContent = formatTime(previewTotalDuration);
-            
-            renderPreviewSegments();
-            initTimelineProgress();
-            initPreviewWaveformTouch(wavesurfer);
-        });
-        
-        wavesurfer.on('error', () => {
-            previewLoading.innerHTML = '<div class="waveform-error">预览加载失败</div>';
-        });
-        
-        const timeDisplay = document.getElementById('previewTimeDisplay');
-        const seekTimeEl = document.getElementById('previewSeekTime');
-        const seekIcons = ['map-pin', 'target', 'crosshair', 'navigation', 'compass', 'flag', 'bookmark', 'pin', 'locate', 'anchor'];
-        
-        const updateSeekTimeDisplay = (time) => {
-            if (!seekTimeEl) return;
-            const randomIcon = seekIcons[Math.floor(Math.random() * seekIcons.length)];
-            seekTimeEl.innerHTML = `<i data-lucide="${randomIcon}"></i><span>${formatTime(time)}</span>`;
-            refreshIcons();
-        };
-        
-        const updateProgress = () => {
-            const currentTime = wavesurfer.getCurrentTime();
-            timeDisplay.textContent = formatTime(currentTime);
-            updateAllProgress(currentTime);
-        };
-        
-        wavesurfer.on('audioprocess', updateProgress);
-        wavesurfer.on('seeking', () => {
-            updateProgress();
-            updateSeekTimeDisplay(wavesurfer.getCurrentTime());
-        });
-        wavesurfer.on('interaction', () => {
-            updateProgress();
-            updateSeekTimeDisplay(wavesurfer.getCurrentTime());
-        });
-        
-        previewPlayBtn.onclick = () => { wavesurfer.playPause(); };
-        
-        wavesurfer.on('play', () => { 
-            previewPlayBtn.innerHTML = '<i data-lucide="pause"></i>'; 
-            refreshIcons(); 
-        });
-        wavesurfer.on('pause', () => { 
-            previewPlayBtn.innerHTML = '<i data-lucide="play"></i>'; 
-            refreshIcons(); 
-        });
-        wavesurfer.on('finish', () => {
-            updateAllProgress(0);
-        });
+        initPreviewWavesurfer(previewUrl);
         
     } catch (error) {
         console.log('Preview generation failed:', error);
@@ -177,24 +108,362 @@ async function doUpdatePreview() {
     }
 }
 
-function renderPreviewSegments() {
-    const container = document.getElementById('previewSegments');
-    if (!container || previewTotalDuration <= 0) return;
+function initPreviewWavesurfer(previewUrl) {
+    const previewLoading = document.getElementById('previewLoading');
+    const previewWaveformEl = document.getElementById('previewWaveform');
+    const previewPlayBtn = document.getElementById('previewPlayBtn');
+    const previewContainer = document.getElementById('previewWaveformContainer');
+    const rulerEl = document.getElementById('previewRuler');
+    const scrollLeftEl = document.getElementById('previewScrollLeft');
+    const scrollRightEl = document.getElementById('previewScrollRight');
+    const navigatorWaveEl = document.getElementById('previewNavigatorWave');
+    const navigatorViewport = document.getElementById('previewNavigatorViewport');
+    const navigatorCursor = document.getElementById('previewNavigatorCursor');
+    const navigatorContainer = document.getElementById('previewNavigator');
+    const timeDisplay = document.getElementById('previewTimeDisplay');
+    const seekTimeEl = document.getElementById('previewSeekTime');
+    const zoomInBtn = document.getElementById('previewZoomIn');
+    const zoomOutBtn = document.getElementById('previewZoomOut');
     
-    container.innerHTML = previewSegments.map((seg, i) => {
-        const widthPercent = ((seg.end - seg.start) / previewTotalDuration) * 100;
-        const isAiFill = seg.isAiFill;
-        const aiState = seg.aiState || (isAiFill ? 'ai-loading' : '');
-        const extraClass = isAiFill ? `ai-fill-seg ${aiState}` : '';
+    const seekIcons = ['map-pin', 'target', 'crosshair', 'navigation', 'compass', 'flag', 'bookmark', 'pin', 'locate', 'anchor'];
+    
+    const updateSeekTime = (time) => {
+        if (!seekTimeEl) return;
+        const randomIcon = seekIcons[Math.floor(Math.random() * seekIcons.length)];
+        seekTimeEl.innerHTML = `<i data-lucide="${randomIcon}"></i><span>${formatTime(time)}</span>`;
+        refreshIcons();
+    };
+    
+    // 主波形 - 使用主题蓝紫渐变色
+    const wavesurfer = WaveSurfer.create({
+        container: previewWaveformEl,
+        waveColor: '#a78bfa',
+        progressColor: '#667eea',
+        cursorColor: 'transparent',
+        height: 60,
+        barWidth: 2,
+        barGap: 1,
+        barRadius: 2,
+        normalize: true,
+        interact: false,
+        fillParent: true,
+        minPxPerSec: 1
+    });
+    
+    wavesurfer.load(previewUrl);
+    state.previewWavesurfer = wavesurfer;
+
+    // 导航条波形 - 同样使用主题色
+    let navigatorWavesurfer = null;
+    if (navigatorWaveEl) {
+        navigatorWavesurfer = WaveSurfer.create({
+            container: navigatorWaveEl,
+            waveColor: '#a78bfa',
+            progressColor: '#667eea',
+            cursorColor: 'transparent',
+            height: 24,
+            barWidth: 1,
+            barGap: 0,
+            barRadius: 0,
+            normalize: true,
+            interact: false
+        });
+        navigatorWavesurfer.load(previewUrl);
+        state.previewNavigatorWavesurfer = navigatorWavesurfer;
+    }
+    
+    // 状态变量
+    let rulerDragging = false;
+    let isPlaying = false;
+    let currentZoom = 1;
+    let baseZoom = 1;
+    let isAutoScrolling = false;
+    const minZoomMultiplier = 1;
+    const maxZoomMultiplier = 50;
+    
+    // 更新标尺位置
+    const updateRulerPosition = (progress, autoScroll = false) => {
+        if (!rulerEl) return;
+        const scrollContainer = wavesurfer?.renderer?.scrollContainer;
+        if (!scrollContainer) return;
         
-        return `<div class="preview-seg ${extraClass}" data-seg="${i}" style="width:${widthPercent}%;${isAiFill ? '' : 'background:' + seg.color}" title="${seg.label}">
-            <div class="preview-seg-progress" style="background:${seg.color}"></div>
-        </div>`;
-    }).join('');
+        const scrollWidth = scrollContainer.scrollWidth;
+        const containerWidth = scrollContainer.clientWidth;
+        const scrollLeft = scrollContainer.scrollLeft;
+        const absoluteX = progress * scrollWidth;
+        let visibleX = absoluteX - scrollLeft;
+        
+        const minX = -12;
+        const maxX = containerWidth + 12;
+        visibleX = Math.max(minX, Math.min(maxX, visibleX));
+        rulerEl.style.left = visibleX + 'px';
+        
+        if (autoScroll && isPlaying && currentZoom > 1 && !isAutoScrolling) {
+            const centerX = containerWidth / 2;
+            const threshold = containerWidth * 0.6;
+            if (visibleX > threshold && scrollLeft < scrollWidth - containerWidth) {
+                isAutoScrolling = true;
+                const newScrollLeft = absoluteX - centerX;
+                scrollContainer.scrollLeft = Math.min(newScrollLeft, scrollWidth - containerWidth);
+                const newVisibleX = absoluteX - scrollContainer.scrollLeft;
+                rulerEl.style.left = newVisibleX + 'px';
+                setTimeout(() => { isAutoScrolling = false; }, 50);
+            }
+        }
+        updateNavigatorCursor(progress);
+    };
+
+    // 点击/拖拽标尺定位
+    const seekFromRuler = (clientX) => {
+        const scrollContainer = wavesurfer?.renderer?.scrollContainer;
+        if (!scrollContainer) return;
+        
+        const rect = scrollContainer.getBoundingClientRect();
+        const scrollLeft = scrollContainer.scrollLeft;
+        const waveformWidth = scrollContainer.scrollWidth;
+        const x = clientX - rect.left + scrollLeft;
+        const progress = Math.max(0, Math.min(1, x / waveformWidth));
+        const duration = wavesurfer.getDuration();
+        const seekTime = duration * progress;
+        
+        wavesurfer.setTime(seekTime);
+        updateRulerPosition(progress);
+        timeDisplay.textContent = formatTime(seekTime);
+        updateSeekTime(seekTime);
+        updateAllProgress(seekTime);
+    };
+    
+    previewContainer.addEventListener('click', (e) => {
+        if (rulerDragging) return;
+        seekFromRuler(e.clientX);
+    });
+    
+    if (rulerEl) {
+        const rulerHandles = rulerEl.querySelectorAll('.ruler-handle');
+        rulerHandles.forEach(handle => {
+            handle.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); e.preventDefault();
+                rulerDragging = true;
+                rulerEl.classList.add('dragging');
+            });
+            handle.addEventListener('mousedown', (e) => {
+                e.stopPropagation(); e.preventDefault();
+                rulerDragging = true;
+                rulerEl.classList.add('dragging');
+            });
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (rulerDragging && e.touches.length === 1) {
+                e.preventDefault();
+                seekFromRuler(e.touches[0].clientX);
+            }
+        }, { passive: false });
+        document.addEventListener('touchend', () => {
+            if (rulerDragging) { rulerDragging = false; rulerEl.classList.remove('dragging'); }
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (rulerDragging) seekFromRuler(e.clientX);
+        });
+        document.addEventListener('mouseup', () => {
+            if (rulerDragging) { rulerDragging = false; rulerEl.classList.remove('dragging'); }
+        });
+    }
+
+    // 滚动边缘指示器
+    const updateScrollEdges = () => {
+        if (!scrollLeftEl || !scrollRightEl) return;
+        const scrollContainer = wavesurfer?.renderer?.scrollContainer;
+        if (!scrollContainer) return;
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
+        scrollLeftEl.classList.toggle('show', scrollLeft > 5);
+        scrollRightEl.classList.toggle('show', scrollLeft < scrollWidth - clientWidth - 5);
+    };
+    
+    // 更新导航条视口
+    const updateViewport = () => {
+        if (!navigatorViewport) return;
+        const scrollContainer = wavesurfer?.renderer?.scrollContainer;
+        if (!scrollContainer) return;
+        const scrollWidth = scrollContainer.scrollWidth;
+        const containerWidth = scrollContainer.clientWidth;
+        const scrollLeft = scrollContainer.scrollLeft;
+        const viewportWidthPercent = (containerWidth / scrollWidth) * 100;
+        const viewportLeftPercent = (scrollLeft / scrollWidth) * 100;
+        navigatorViewport.style.width = viewportWidthPercent + '%';
+        navigatorViewport.style.left = viewportLeftPercent + '%';
+        navigatorViewport.style.display = 'block';
+    };
+    
+    // 更新导航条播放位置
+    const updateNavigatorCursor = (progress) => {
+        if (!navigatorCursor) return;
+        navigatorCursor.style.left = Math.max(0, Math.min(100, progress * 100)) + '%';
+    };
+    
+    // 滚动事件
+    const onScroll = () => {
+        if (isAutoScrolling) return;
+        updateScrollEdges();
+        updateViewport();
+        const duration = wavesurfer.getDuration();
+        if (duration > 0) {
+            const progress = wavesurfer.getCurrentTime() / duration;
+            updateRulerPosition(progress, false);
+        }
+    };
+    wavesurfer.on('scroll', onScroll);
+    wavesurfer.on('zoom', () => {
+        setTimeout(() => {
+            updateScrollEdges();
+            updateViewport();
+            const duration = wavesurfer.getDuration();
+            if (duration > 0) {
+                const progress = wavesurfer.getCurrentTime() / duration;
+                updateRulerPosition(progress);
+            }
+        }, 50);
+    });
+
+    // 缩放
+    const applyZoom = (newMultiplier) => {
+        currentZoom = Math.max(minZoomMultiplier, Math.min(maxZoomMultiplier, newMultiplier));
+        wavesurfer.zoom(baseZoom * currentZoom);
+    };
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => applyZoom(currentZoom * 1.5));
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => applyZoom(currentZoom / 1.5));
+    const zoomResetBtn = document.getElementById('previewZoomReset');
+    if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => applyZoom(1));
+    
+    // 双指缩放
+    let initialPinchDistance = 0, initialZoom = 1;
+    const getDistance = (touches) => {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    };
+    previewContainer.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            initialPinchDistance = getDistance(e.touches);
+            initialZoom = currentZoom;
+        }
+    }, { passive: false });
+    previewContainer.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const scale = getDistance(e.touches) / initialPinchDistance;
+            applyZoom(initialZoom * scale);
+        }
+    }, { passive: false });
+    
+    // 导航条拖拽
+    let navigatorDragging = false;
+    const navigateFromNavigator = (clientX) => {
+        if (!navigatorContainer) return;
+        const scrollContainer = wavesurfer?.renderer?.scrollContainer;
+        if (!scrollContainer) return;
+        const rect = navigatorContainer.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const progress = Math.max(0, Math.min(1, x / rect.width));
+        const scrollWidth = scrollContainer.scrollWidth;
+        const containerWidth = scrollContainer.clientWidth;
+        const targetScroll = (progress * scrollWidth) - (containerWidth / 2);
+        scrollContainer.scrollLeft = Math.max(0, Math.min(scrollWidth - containerWidth, targetScroll));
+    };
+    
+    if (navigatorContainer) {
+        navigatorContainer.addEventListener('touchstart', (e) => {
+            e.preventDefault(); navigatorDragging = true;
+            navigateFromNavigator(e.touches[0].clientX);
+        }, { passive: false });
+        navigatorContainer.addEventListener('touchmove', (e) => {
+            if (navigatorDragging) { e.preventDefault(); navigateFromNavigator(e.touches[0].clientX); }
+        }, { passive: false });
+        navigatorContainer.addEventListener('touchend', () => { navigatorDragging = false; });
+        navigatorContainer.addEventListener('mousedown', (e) => {
+            navigatorDragging = true; navigateFromNavigator(e.clientX);
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (navigatorDragging) navigateFromNavigator(e.clientX);
+        });
+        document.addEventListener('mouseup', () => { navigatorDragging = false; });
+    }
+
+    // wavesurfer ready
+    wavesurfer.on('ready', () => {
+        previewLoading.style.display = 'none';
+        previewWaveformEl.style.display = 'block';
+        previewPlayBtn.disabled = false;
+        
+        previewTotalDuration = wavesurfer.getDuration();
+        document.getElementById('previewDuration').textContent = formatTime(previewTotalDuration);
+        
+        // 计算 baseZoom
+        const containerWidth = previewContainer.clientWidth - 20;
+        if (previewTotalDuration > 0 && containerWidth > 0) {
+            baseZoom = containerWidth / previewTotalDuration;
+            wavesurfer.zoom(baseZoom);
+        }
+        
+        initTimelineProgress();
+        
+        // 延迟初始化标尺和视口，等待 zoom 完成
+        setTimeout(() => {
+            updateRulerPosition(0);
+            updateScrollEdges();
+            updateViewport();
+            refreshIcons();
+        }, 100);
+    });
+    
+    wavesurfer.on('error', () => {
+        previewLoading.innerHTML = '<div class="waveform-error">预览加载失败</div>';
+    });
+    
+    // 播放控制
+    const updateProgress = () => {
+        const currentTime = wavesurfer.getCurrentTime();
+        timeDisplay.textContent = formatTime(currentTime);
+        updateAllProgress(currentTime);
+        const duration = wavesurfer.getDuration();
+        if (duration > 0) updateRulerPosition(currentTime / duration, true);
+    };
+    
+    wavesurfer.on('audioprocess', updateProgress);
+    wavesurfer.on('seeking', () => {
+        updateProgress();
+        updateSeekTime(wavesurfer.getCurrentTime());
+    });
+    
+    previewPlayBtn.onclick = () => { wavesurfer.playPause(); };
+    wavesurfer.on('play', () => { 
+        isPlaying = true;
+        previewPlayBtn.innerHTML = '<i data-lucide="pause"></i>'; 
+        refreshIcons(); 
+    });
+    wavesurfer.on('pause', () => { 
+        isPlaying = false;
+        previewPlayBtn.innerHTML = '<i data-lucide="play"></i>'; 
+        refreshIcons(); 
+    });
+    wavesurfer.on('finish', () => { updateAllProgress(0); });
+    
+    // 同步导航条波形进度
+    if (navigatorWavesurfer) {
+        wavesurfer.on('audioprocess', () => {
+            const time = wavesurfer.getCurrentTime();
+            if (navigatorWavesurfer.getDuration() > 0) navigatorWavesurfer.setTime(time);
+        });
+        wavesurfer.on('seeking', () => {
+            const time = wavesurfer.getCurrentTime();
+            if (navigatorWavesurfer.getDuration() > 0) navigatorWavesurfer.setTime(time);
+        });
+    }
 }
 
 function initTimelineProgress() {
-    document.querySelectorAll('.timeline-item').forEach((item, index) => {
+    document.querySelectorAll('.timeline-item').forEach((item) => {
         if (!item.querySelector('.item-progress')) {
             const progressEl = document.createElement('div');
             progressEl.className = 'item-progress';
@@ -218,10 +487,9 @@ function updateAllProgress(currentTime) {
         }
     });
     
-    previewSegments.forEach((seg, i) => {
+    previewSegments.forEach((seg) => {
         const itemEl = document.querySelector(`.timeline-item[data-index="${seg.index}"]`);
         if (!itemEl) return;
-        
         const progressEl = itemEl.querySelector('.item-progress');
         if (!progressEl) return;
         
@@ -249,6 +517,10 @@ function hidePreview() {
         state.previewWavesurfer.destroy();
         state.previewWavesurfer = null;
     }
+    if (state.previewNavigatorWavesurfer) {
+        state.previewNavigatorWavesurfer.destroy();
+        state.previewNavigatorWavesurfer = null;
+    }
     previewSegments = [];
     previewTotalDuration = 0;
     
@@ -257,93 +529,4 @@ function hidePreview() {
         const progressEl = item.querySelector('.item-progress');
         if (progressEl) progressEl.style.width = '0%';
     });
-}
-
-function initPreviewWaveformTouch(wavesurfer) {
-    const waveformEl = document.getElementById('previewWave');
-    const seekTimeEl = document.getElementById('previewSeekTime');
-    const timeDisplay = document.getElementById('previewTimeDisplay');
-    if (!waveformEl) return;
-    
-    const seekIcons = ['map-pin', 'target', 'crosshair', 'navigation', 'compass', 'flag', 'bookmark', 'pin', 'locate', 'anchor'];
-    
-    const updateSeekTime = (time) => {
-        if (!seekTimeEl) return;
-        const randomIcon = seekIcons[Math.floor(Math.random() * seekIcons.length)];
-        seekTimeEl.innerHTML = `<i data-lucide="${randomIcon}"></i><span>${formatTime(time)}</span>`;
-        refreshIcons();
-    };
-    
-    let holdTimer = null;
-    let isDragging = false;
-    
-    const seekToTouch = (touch) => {
-        const rect = waveformEl.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const progress = Math.max(0, Math.min(1, x / rect.width));
-        const duration = wavesurfer.getDuration();
-        const seekTime = duration * progress;
-        
-        wavesurfer.setTime(seekTime);
-        
-        const currentTime = wavesurfer.getCurrentTime();
-        if (timeDisplay) timeDisplay.textContent = formatTime(currentTime);
-        updateSeekTime(currentTime);
-        updateAllProgress(currentTime);
-    };
-    
-    const resetHoldTimer = () => {
-        if (holdTimer) clearTimeout(holdTimer);
-        holdTimer = setTimeout(() => {
-            if (wavesurfer && !wavesurfer.isPlaying()) {
-                wavesurfer.play();
-            }
-        }, 2000);
-    };
-    
-    const clearHoldTimer = () => {
-        if (holdTimer) { 
-            clearTimeout(holdTimer); 
-            holdTimer = null; 
-        }
-    };
-    
-    waveformEl.addEventListener('mousedown', () => {
-        isDragging = true;
-        resetHoldTimer();
-    });
-    waveformEl.addEventListener('mouseup', () => {
-        isDragging = false;
-        clearHoldTimer();
-    });
-    waveformEl.addEventListener('mouseleave', () => {
-        isDragging = false;
-        clearHoldTimer();
-    });
-    waveformEl.addEventListener('mousemove', (e) => { 
-        if (e.buttons === 1) resetHoldTimer(); 
-    });
-    
-    waveformEl.addEventListener('touchstart', (e) => {
-        isDragging = true;
-        seekToTouch(e.touches[0]);
-        resetHoldTimer();
-    }, { passive: true });
-    
-    waveformEl.addEventListener('touchmove', (e) => {
-        if (isDragging) {
-            seekToTouch(e.touches[0]);
-            resetHoldTimer();
-        }
-    }, { passive: true });
-    
-    waveformEl.addEventListener('touchend', () => {
-        isDragging = false;
-        clearHoldTimer();
-    }, { passive: true });
-    
-    waveformEl.addEventListener('touchcancel', () => {
-        isDragging = false;
-        clearHoldTimer();
-    }, { passive: true });
 }

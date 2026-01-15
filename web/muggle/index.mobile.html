@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BigEyeMix 麻瓜模式</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
-    <link rel="stylesheet" href="/muggle/Muggle.base.css?v=18">
-    <link rel="stylesheet" href="/muggle/Muggle.upload.css?v=18">
-    <link rel="stylesheet" href="/muggle/Muggle.editor.css?v=18">
-    <link rel="stylesheet" href="/muggle/Muggle.timeline.css?v=18">
-    <link rel="stylesheet" href="/muggle/Muggle.modal.css?v=18">
-    <link rel="stylesheet" href="/muggle/Muggle.effects.css?v=18">
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.min.js"></script>
+    <link rel="stylesheet" href="/muggle/Muggle.base.css?v=24">
+    <link rel="stylesheet" href="/muggle/Muggle.upload.css?v=24">
+    <link rel="stylesheet" href="/muggle/Muggle.editor.css?v=24">
+    <link rel="stylesheet" href="/muggle/Muggle.timeline.css?v=24">
+    <link rel="stylesheet" href="/muggle/Muggle.modal.css?v=24">
+    <link rel="stylesheet" href="/muggle/Muggle.effects.css?v=24">
 </head>
 <body>
     <div class="container">
@@ -87,25 +90,42 @@
         </div>
     </div>
 
-    <!-- Custom Gap Modal -->
-    <div class="modal-overlay" id="customGapModal">
+    <!-- Custom Transition Modal -->
+    <div class="modal-overlay" id="customTransitionModal">
         <div class="modal-content" style="max-width: 340px;">
             <div class="modal-header">
-                <span class="modal-title">添加间隔</span>
-                <button class="modal-close" onclick="closeCustomGapModal()"><i data-lucide="x"></i></button>
+                <span class="modal-title">添加过渡</span>
+                <button class="modal-close" onclick="closeCustomTransitionModal()"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body" style="padding: 20px;">
                 <div style="margin-bottom: 16px;">
                     <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">过渡类型</label>
-                    <div class="gap-type-selector" id="gapTypeSelector"></div>
+                    <div class="transition-type-selector" id="transitionTypeSelector">
+                        <div class="transition-type-option selected" data-type="magicfill">
+                            <i data-lucide="sparkles"></i>
+                            <span>魔法填充</span>
+                        </div>
+                        <div class="transition-type-option" data-type="beatsync">
+                            <i data-lucide="activity"></i>
+                            <span>节拍对齐</span>
+                        </div>
+                        <div class="transition-type-option" data-type="crossfade">
+                            <i data-lucide="git-merge"></i>
+                            <span>淡出淡入</span>
+                        </div>
+                        <div class="transition-type-option" data-type="silence">
+                            <i data-lucide="volume-x"></i>
+                            <span>休止静音</span>
+                        </div>
+                    </div>
                 </div>
                 <div style="margin-bottom: 16px;">
-                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">间隔时长（秒）</label>
-                    <input type="number" id="customGapInput" min="1" max="30" step="1" value="3" 
+                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">过渡时长（秒）</label>
+                    <input type="number" id="customTransitionInput" min="1" max="30" step="1" value="3" 
                            style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center;">
                 </div>
-                <button onclick="addCustomGap()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                    添加间隔块
+                <button onclick="addCustomTransition()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                    添加过渡块
                 </button>
             </div>
         </div>
@@ -140,17 +160,17 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/muggle/Muggle.config.js?v=18"></script>
-    <script src="/muggle/Muggle.utils.js?v=18"></script>
-    <script src="/muggle/Muggle.upload.js?v=18"></script>
-    <script src="/muggle/Muggle.history.js?v=18"></script>
-    <script src="/muggle/Muggle.editor.js?v=18"></script>
-    <script src="/muggle/Muggle.editor.clips.js?v=18"></script>
-    <script src="/muggle/Muggle.timeline.js?v=18"></script>
-    <script src="/muggle/Muggle.timeline.drag.js?v=18"></script>
-    <script src="/muggle/Muggle.timeline.preview.js?v=18"></script>
-    <script src="/muggle/Muggle.timeline.ai.js?v=18"></script>
-    <script src="/muggle/Muggle.logic.js?v=18"></script>
+    <script src="/muggle/Muggle.config.js?v=24"></script>
+    <script src="/muggle/Muggle.utils.js?v=24"></script>
+    <script src="/muggle/Muggle.upload.js?v=24"></script>
+    <script src="/muggle/Muggle.history.js?v=24"></script>
+    <script src="/muggle/Muggle.editor.js?v=24"></script>
+    <script src="/muggle/Muggle.editor.clips.js?v=24"></script>
+    <script src="/muggle/Muggle.timeline.js?v=24"></script>
+    <script src="/muggle/Muggle.timeline.drag.js?v=24"></script>
+    <script src="/muggle/Muggle.timeline.preview.js?v=24"></script>
+    <script src="/muggle/Muggle.timeline.magic.js?v=24"></script>
+    <script src="/muggle/Muggle.logic.js?v=24"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>

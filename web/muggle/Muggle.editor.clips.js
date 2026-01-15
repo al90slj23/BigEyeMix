@@ -99,7 +99,8 @@ let seekDragData = null;
 let seekDragClone = null;
 
 function initSeekTimeDrag() {
-    document.querySelectorAll('.seek-time').forEach(seekEl => {
+    // seek-time 和 time-display 都支持拖拽
+    document.querySelectorAll('.seek-time, .time-display').forEach(seekEl => {
         seekEl.addEventListener('touchstart', handleSeekDragStart, { passive: false });
         seekEl.addEventListener('touchmove', handleSeekDragMove, { passive: false });
         seekEl.addEventListener('touchend', handleSeekDragEnd);
@@ -110,11 +111,14 @@ function initSeekTimeDrag() {
 function handleSeekDragStart(e) {
     e.preventDefault();
     const seekEl = e.currentTarget;
-    const timeText = seekEl.querySelector('span')?.textContent;
+    // time-display 直接取 textContent，seek-time 取 span 内容
+    let timeText = seekEl.classList.contains('time-display') 
+        ? seekEl.textContent 
+        : seekEl.querySelector('span')?.textContent;
     if (!timeText || timeText === '--:--.-') return;
     
     seekDragData = {
-        time: timeText,
+        time: timeText.trim(),
         trackId: seekEl.closest('.track-editor')?.dataset.track
     };
     
@@ -125,11 +129,14 @@ function handleSeekDragStart(e) {
 
 function handleSeekMouseDown(e) {
     const seekEl = e.currentTarget;
-    const timeText = seekEl.querySelector('span')?.textContent;
+    // time-display 直接取 textContent，seek-time 取 span 内容
+    let timeText = seekEl.classList.contains('time-display') 
+        ? seekEl.textContent 
+        : seekEl.querySelector('span')?.textContent;
     if (!timeText || timeText === '--:--.-') return;
     
     seekDragData = {
-        time: timeText,
+        time: timeText.trim(),
         trackId: seekEl.closest('.track-editor')?.dataset.track
     };
     
@@ -247,7 +254,7 @@ function cleanupSeekDrag() {
         seekDragClone = null;
     }
     
-    document.querySelectorAll('.seek-time.dragging').forEach(el => {
+    document.querySelectorAll('.seek-time.dragging, .time-display.dragging').forEach(el => {
         el.classList.remove('dragging');
     });
     

@@ -51,6 +51,26 @@
 .waveform { 
     height: 60px;
 }
+
+/* ==================== Spectrogram 频谱图 ==================== */
+.spectrogram {
+    height: 32px;
+    margin-top: 2px;
+    border-radius: 4px;
+    overflow: hidden;
+    opacity: 0.85;
+}
+
+/* ==================== Timeline 时间轴 ==================== */
+.timeline {
+    height: 14px;
+    margin-top: 2px;
+    opacity: 0.7;
+}
+.timeline canvas {
+    height: 14px !important;
+}
+
 .waveform-loading {
     display: flex;
     flex-direction: column;
@@ -103,7 +123,15 @@
     display: flex;
     align-items: center;
     font-family: monospace;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s;
 }
+.time-display:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+}
+.time-display.dragging { opacity: 0.5; }
 .seek-time {
     height: 36px;
     padding: 0 12px;
@@ -137,6 +165,7 @@
     display: flex;
     align-items: stretch;
     gap: 10px;
+    overflow: hidden;
 }
 .clip-tag {
     background: #667eea;
@@ -153,29 +182,36 @@
 .clip-times { 
     flex: 1; 
     display: flex; 
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
 }
 .clip-time-input { 
+    flex: 1;
     display: flex; 
     align-items: center; 
-    gap: 8px;
+    gap: 4px;
+    min-width: 0;
 }
 .clip-time-input span { 
-    font-size: 13px; 
+    font-size: 12px; 
     color: #666; 
-    width: 20px;
     flex-shrink: 0;
 }
 .clip-time-input input {
     flex: 1;
-    padding: 8px 10px;
+    min-width: 0;
+    width: 100%;
+    padding: 8px 4px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 15px;
+    font-size: 13px;
     font-family: monospace;
-    text-align: left;
+    text-align: center;
     background: white;
+    box-sizing: border-box;
 }
 .clip-time-input input:focus {
     outline: none;
@@ -224,6 +260,7 @@
     gap: 8px;
     margin-bottom: 8px;
     position: relative;
+    align-items: stretch;
 }
 
 .waveform-main {
@@ -245,22 +282,30 @@
 .waveform-zoom-btns {
     display: flex;
     flex-direction: column;
-    gap: 4px;
     flex-shrink: 0;
-    margin-top: 8px;
+    /* 匹配 waveform-container 高度: waveform(60) + padding(20) = 80px */
+    height: 80px;
 }
 
 .zoom-btn {
     width: 32px;
-    height: 32px;
+    flex: 1;
     border: 1px solid #e0e0e0;
     background: #f8f9fa;
-    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+}
+
+.zoom-btn:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.zoom-btn:last-child {
+    border-radius: 0 0 8px 8px;
+    border-top: none;
 }
 
 .zoom-btn i {

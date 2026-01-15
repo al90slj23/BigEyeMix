@@ -90,14 +90,14 @@ function renderEditorAndTimeline() {
                     <div class="blocks-list" id="clipBlocks"></div>
                 </div>
                 <div class="blocks-row">
-                    <div class="blocks-label">间隔</div>
-                    <div class="blocks-list" id="gapBlocks">
-                        ${gapPresets.map(sec => `
-                            <div class="block gap-block" draggable="true" data-type="gap" data-duration="${sec}" data-gap-type="ai_fill">
+                    <div class="blocks-label">过渡</div>
+                    <div class="blocks-list" id="transitionBlocks">
+                        ${(typeof transitionPresets !== 'undefined' ? transitionPresets : [1, 3, 5, 10]).map(sec => `
+                            <div class="block transition-block" draggable="true" data-type="transition" data-duration="${sec}" data-transition-type="magicfill">
                                 <i data-lucide="sparkles"></i> ${sec}s
                             </div>
                         `).join('')}
-                        <div class="block gap-add-btn" onclick="showCustomGapModal()">
+                        <div class="block transition-add-btn" onclick="showCustomTransitionModal()">
                             <i data-lucide="plus"></i>
                         </div>
                     </div>
@@ -123,6 +123,16 @@ function renderEditorAndTimeline() {
                 </div>
             </div>
             
+            <!-- 魔法填充状态日志 -->
+            <div class="magic-status-box" id="magicStatusBox" style="display:none;">
+                <div class="magic-status-header">
+                    <i data-lucide="sparkles"></i>
+                    <span>魔法填充</span>
+                    <span class="magic-status-badge" id="magicStatusBadge">等待中</span>
+                </div>
+                <div class="magic-status-logs" id="magicStatusLogs"></div>
+            </div>
+            
             <div class="preview-section" id="previewSection" style="display:none;">
                 <div class="preview-header">
                     <div class="preview-title">
@@ -130,18 +140,45 @@ function renderEditorAndTimeline() {
                     </div>
                     <div class="preview-duration" id="previewDuration"></div>
                 </div>
-                <div class="preview-waveform-container">
-                    <div class="preview-waveform-loading" id="previewLoading">
-                        <div class="waveform-spinner"></div>
-                        <div class="waveform-loading-text">生成预览中...</div>
+                <div class="preview-waveform-wrapper waveform-wrapper" id="previewWaveformWrapper">
+                    <div class="waveform-main">
+                        <div class="scroll-edge scroll-edge-left" id="previewScrollLeft">
+                            <i data-lucide="chevrons-left"></i>
+                        </div>
+                        <div class="scroll-edge scroll-edge-right" id="previewScrollRight">
+                            <i data-lucide="chevrons-right"></i>
+                        </div>
+                        <div class="waveform-container" id="previewWaveformContainer" style="border-left:3px solid #667eea">
+                            <div class="waveform-loading" id="previewLoading">
+                                <div class="waveform-spinner"></div>
+                                <div class="waveform-loading-text">生成预览中...</div>
+                            </div>
+                            <div class="waveform" id="previewWaveform" style="display:none;"></div>
+                        </div>
+                        <div class="waveform-ruler" id="previewRuler" style="background:#667eea">
+                            <div class="ruler-handle ruler-handle-top" style="background:#667eea"></div>
+                            <div class="ruler-handle ruler-handle-bottom" style="background:#667eea"></div>
+                        </div>
                     </div>
-                    <div class="preview-waveform" id="previewWaveform"></div>
+                    <div class="waveform-zoom-btns">
+                        <button class="zoom-btn zoom-in" id="previewZoomIn" style="color:#667eea">
+                            <i data-lucide="zoom-in"></i>
+                        </button>
+                        <button class="zoom-btn zoom-out" id="previewZoomOut" style="color:#667eea">
+                            <i data-lucide="zoom-out"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="preview-controls">
-                    <button class="play-btn preview-play-btn" id="previewPlayBtn" disabled>
+                <div class="waveform-navigator" id="previewNavigator">
+                    <div class="navigator-wave" id="previewNavigatorWave"></div>
+                    <div class="navigator-viewport" id="previewNavigatorViewport" style="border-color:#667eea;background:rgba(102,126,234,0.12)"></div>
+                    <div class="navigator-cursor" id="previewNavigatorCursor" style="background:#667eea"></div>
+                </div>
+                <div class="preview-controls playback-controls">
+                    <button class="play-btn preview-play-btn" id="previewPlayBtn" style="background:#667eea" disabled>
                         <i data-lucide="play"></i>
                     </button>
-                    <div class="time-display" id="previewTimeDisplay">00:00.0</div>
+                    <div class="time-display" id="previewTimeDisplay" style="color:#667eea">00:00.0</div>
                     <div class="seek-time" id="previewSeekTime">
                         <i data-lucide="map-pin"></i>
                         <span>--:--.-</span>
@@ -215,6 +252,8 @@ function initWaveform(track) {
         refreshIcons();
     };
     
+    // 获取容器元素（频谱图和时间轴在麻瓜模式下不使用）
+    
     const wavesurfer = WaveSurfer.create({
         container: waveformEl,
         waveColor: track.color.light,
@@ -254,15 +293,18 @@ function initWaveform(track) {
         const containerWidth = scrollContainer.clientWidth;
         const scrollLeft = scrollContainer.scrollLeft;
         
+        // waveform-container 的 padding-left (10px) + border-left (3px)
+        const containerPadding = 13;
+        
         // 标尺在整个波形中的绝对位置
         const absoluteX = progress * scrollWidth;
-        // 相对于可视区域的位置
-        let visibleX = absoluteX - scrollLeft;
+        // 相对于可视区域的位置，加上容器 padding
+        let visibleX = absoluteX - scrollLeft + containerPadding;
         
         // 限制标尺在可见区域内（防止被 overflow:hidden 裁剪）
         // 但保留一点超出以显示完整的 handle
-        const minX = -12; // handle 半径
-        const maxX = containerWidth + 12;
+        const minX = containerPadding - 12; // handle 半径
+        const maxX = containerWidth + containerPadding + 12;
         visibleX = Math.max(minX, Math.min(maxX, visibleX));
         
         // 设置标尺位置
@@ -369,8 +411,12 @@ function initWaveform(track) {
         if (loadingEl) loadingEl.style.display = 'none';
         waveformEl.style.display = 'block';
         if (playBtn) playBtn.disabled = false;
-        updateRulerPosition(0);
-        updateScrollEdges();
+        
+        // 延迟初始化标尺位置，等待渲染完成
+        setTimeout(() => {
+            updateRulerPosition(0);
+            updateScrollEdges();
+        }, 100);
     });
     
     wavesurfer.on('error', () => {
@@ -465,6 +511,7 @@ function initWaveform(track) {
     
     const zoomInBtn = document.querySelector(`.zoom-btn.zoom-in[data-track="${track.id}"]`);
     const zoomOutBtn = document.querySelector(`.zoom-btn.zoom-out[data-track="${track.id}"]`);
+    const zoomResetBtn = document.querySelector(`.zoom-btn.zoom-reset[data-track="${track.id}"]`);
     
     const applyZoom = (newMultiplier) => {
         currentZoom = Math.max(minZoomMultiplier, Math.min(maxZoomMultiplier, newMultiplier));
@@ -487,6 +534,9 @@ function initWaveform(track) {
     }
     if (zoomOutBtn) {
         zoomOutBtn.addEventListener('click', () => applyZoom(currentZoom / 1.5));
+    }
+    if (zoomResetBtn) {
+        zoomResetBtn.addEventListener('click', () => applyZoom(1)); // 复原到 1x
     }
     
     // 双指缩放手势
@@ -580,17 +630,21 @@ function initWaveform(track) {
     let navigatorDragging = false;
     
     const navigateFromNavigator = (clientX) => {
-        if (!navigatorContainer || !waveformContainer) return;
+        if (!navigatorContainer) return;
+        
+        // 使用 WaveSurfer 的 scrollContainer
+        const scrollContainer = wavesurfer?.renderer?.scrollContainer;
+        if (!scrollContainer) return;
         
         const rect = navigatorContainer.getBoundingClientRect();
         const x = clientX - rect.left;
         const progress = Math.max(0, Math.min(1, x / rect.width));
         
-        const scrollWidth = waveformContainer.scrollWidth;
-        const containerWidth = waveformContainer.clientWidth;
+        const scrollWidth = scrollContainer.scrollWidth;
+        const containerWidth = scrollContainer.clientWidth;
         const targetScroll = (progress * scrollWidth) - (containerWidth / 2);
         
-        waveformContainer.scrollLeft = Math.max(0, Math.min(scrollWidth - containerWidth, targetScroll));
+        scrollContainer.scrollLeft = Math.max(0, Math.min(scrollWidth - containerWidth, targetScroll));
     };
     
     if (navigatorContainer) {

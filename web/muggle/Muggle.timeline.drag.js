@@ -9,7 +9,7 @@ let touchClone = null;
 let lastInsertIndex = -1;
 
 function initDragAndDrop() {
-    // 片段块和间隔块
+    // 片段块和过渡块
     document.querySelectorAll('.block[draggable="true"]').forEach(block => {
         block.ondragstart = handleDragStart;
         block.ondragend = handleDragEnd;
@@ -45,11 +45,11 @@ function extractDragData(el) {
     const type = el.dataset.type;
     if (type === 'clip') {
         return { type: 'clip', trackId: parseInt(el.dataset.trackId), clipId: parseInt(el.dataset.clipId) };
-    } else if (type === 'gap') {
+    } else if (type === 'transition') {
         return { 
-            type: 'gap', 
+            type: 'transition', 
             duration: parseFloat(el.dataset.duration),
-            gapType: el.dataset.gapType || 'ai_fill'
+            transitionType: el.dataset.transitionType || 'magicfill'
         };
     }
     return null;
@@ -97,14 +97,14 @@ function handleDrop(e) {
     if (draggedIndex !== null) state.timeline.splice(draggedIndex, 1);
     
     const newItem = { ...draggedData };
-    if (newItem.type === 'gap' && !newItem.gapId) {
-        newItem.gapId = generateGapId();
+    if (newItem.type === 'transition' && !newItem.transitionId) {
+        newItem.transitionId = generateTransitionId();
     }
     state.timeline.push(newItem);
     renderTimeline();
     
-    if (newItem.type === 'gap' && newItem.gapType === 'ai_fill' && !newItem.aiState) {
-        setTimeout(() => checkAndStartAiFillTasks(), 100);
+    if (newItem.type === 'transition' && newItem.transitionType === 'magicfill' && !newItem.magicState) {
+        setTimeout(() => checkAndStartMagicFillTasks(), 100);
     }
     
     draggedData = null;
@@ -133,7 +133,7 @@ function handleTimelineItemDrop(e) {
 
 function handleTouchStart(e) {
     const el = e.target.closest('.block');
-    if (!el || el.classList.contains('gap-add-btn')) return;
+    if (!el || el.classList.contains('transition-add-btn')) return;
     
     e.preventDefault();
     draggedData = extractDragData(el);
@@ -232,14 +232,14 @@ function handleTouchEnd(e) {
             if (draggedIndex !== null) state.timeline.splice(draggedIndex, 1);
             
             const newItem = { ...draggedData };
-            if (newItem.type === 'gap' && !newItem.gapId) {
-                newItem.gapId = generateGapId();
+            if (newItem.type === 'transition' && !newItem.transitionId) {
+                newItem.transitionId = generateTransitionId();
             }
             state.timeline.push(newItem);
             renderTimeline();
             
-            if (newItem.type === 'gap' && newItem.gapType === 'ai_fill' && !newItem.aiState) {
-                setTimeout(() => checkAndStartAiFillTasks(), 100);
+            if (newItem.type === 'transition' && newItem.transitionType === 'magicfill' && !newItem.magicState) {
+                setTimeout(() => checkAndStartMagicFillTasks(), 100);
             }
         }
     }
@@ -324,16 +324,16 @@ function insertAtPosition(targetIndex, insertBefore) {
     } else {
         const insertIndex = insertBefore ? targetIndex : targetIndex + 1;
         newItem = { ...draggedData };
-        if (newItem.type === 'gap' && !newItem.gapId) {
-            newItem.gapId = generateGapId();
+        if (newItem.type === 'transition' && !newItem.transitionId) {
+            newItem.transitionId = generateTransitionId();
         }
         state.timeline.splice(insertIndex, 0, newItem);
     }
     
     renderTimeline();
     
-    if (newItem && newItem.type === 'gap' && newItem.gapType === 'ai_fill' && !newItem.aiState) {
-        setTimeout(() => checkAndStartAiFillTasks(), 100);
+    if (newItem && newItem.type === 'transition' && newItem.transitionType === 'magicfill' && !newItem.magicState) {
+        setTimeout(() => checkAndStartMagicFillTasks(), 100);
     }
     
     draggedData = null;
@@ -449,7 +449,7 @@ function confirmDeleteItem(index, x, y) {
         const track = state.tracks.find(t => t.id === item.trackId);
         itemName = track ? `${track.label}${item.clipId}` : '片段';
     } else {
-        itemName = `${item.duration}s 间隔`;
+        itemName = `${item.duration}s 过渡`;
     }
     
     showConfirmDelete(

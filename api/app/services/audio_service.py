@@ -112,10 +112,11 @@ class AudioService:
         """
         Mix multiple audio segments with transitions
         
-        间隔块类型 (gap_type):
-        - ai_fill: AI 填充过渡（需要调用 PiAPI）
-        - silence: 静音间隔
+        过渡块类型 (transition_type):
+        - magicfill: 魔法填充过渡（需要调用 PiAPI）
+        - silence: 静音过渡
         - crossfade: 淡入淡出（前段渐弱 + 后段渐强）
+        - beatsync: 根据节奏（基于BPM节拍对齐）
         """
         from app.services.piapi_service import piapi_service
         
@@ -123,47 +124,54 @@ class AudioService:
             raise ValueError("At least one segment is required")
         
         mixed = None
-        prev_segment = None  # 用于 AI 填充时获取前一段音频
+        prev_segment = None  # 用于魔法填充时获取前一段音频
         prev_file_id = None
         prev_end = 0
         
         for i, seg in enumerate(segments):
-            # 处理间隔块
-            if seg.file_id == '__gap__':
-                gap_duration_ms = int(seg.end * 1000)
-                gap_type = getattr(seg, 'gap_type', 'silence') or 'silence'
+            # 处理过渡块
+            if seg.file_id == '__transition__' or seg.file_id == '__gap__':
+                trans_duration_ms = int(seg.end * 1000)
+                trans_type = getattr(seg, 'transition_type', None) or getattr(seg, 'gap_type', 'silence') or 'silence'
                 
-                if gap_type == 'ai_fill' and prev_segment is not None and i + 1 < len(segments):
-                    # AI 填充：使用前一段音频的结尾生成过渡
+                if trans_type == 'magicfill' and prev_segment is not None and i + 1 < len(segments):
+                    # 魔法填充：使用前一段音频的结尾生成过渡
                     try:
-                        ai_segment = await self._generate_ai_transition(
+                        magic_segment = await self._generate_magic_transition(
                             prev_file_id,
                             prev_end,
                             int(seg.end)  # 扩展时长（秒）
                         )
-                        if ai_segment:
-                            # AI 生成的音频已经包含了过渡，直接拼接
-                            # 但需要去掉原始音频部分，只保留扩展部分
-                            # 这里简化处理：直接使用生成的音频作为过渡
-                            segment = ai_segment
+                        if magic_segment:
+                            segment = magic_segment
                         else:
-                            # AI 失败，降级为静音
-                            segment = AudioSegment.silent(duration=gap_duration_ms)
+                            # 魔法填充失败，降级为静音
+                            segment = AudioSegment.silent(duration=trans_duration_ms)
                     except Exception as e:
-                        print(f"AI fill failed: {e}, falling back to silence")
-                        segment = AudioSegment.silent(duration=gap_duration_ms)
+                        print(f"Magic fill failed: {e}, falling back to silence")
+                        segment = AudioSegment.silent(duration=trans_duration_ms)
+                
+                elif trans_type == 'beatsync' and prev_segment is not None:
+                    # 根据节奏：基于 BPM 生成节拍对齐的过渡
+                    try:
+                        segment = self._generate_beat_sync_transition(
+                            prev_segment, trans_duration_ms
+                        )
+                    except Exception as e:
+                        print(f"Beat sync failed: {e}, falling back to silence")
+                        segment = AudioSegment.silent(duration=trans_duration_ms)
                         
-                elif gap_type == 'crossfade' and prev_segment is not None:
+                elif trans_type == 'crossfade' and prev_segment is not None:
                     # 淡入淡出：前段渐弱
-                    fade_duration = min(gap_duration_ms, len(prev_segment) // 2)
+                    fade_duration = min(trans_duration_ms, len(prev_segment) // 2)
                     if mixed and fade_duration > 0:
                         # 对已混合的音频末尾应用淡出
                         mixed = mixed.fade_out(fade_duration)
-                    # 添加静音间隔
-                    segment = AudioSegment.silent(duration=gap_duration_ms)
+                    # 添加静音过渡
+                    segment = AudioSegment.silent(duration=trans_duration_ms)
                 else:
-                    # 静音间隔
-                    segment = AudioSegment.silent(duration=gap_duration_ms)
+                    # 静音过渡
+                    segment = AudioSegment.silent(duration=trans_duration_ms)
             else:
                 # 普通音频片段
                 file_path = os.path.join(settings.UPLOAD_DIR, seg.file_id)
@@ -175,15 +183,15 @@ class AudioService:
                 end_ms = int(seg.end * 1000)
                 segment = audio[start_ms:end_ms]
                 
-                # 检查前一个是否是 crossfade 间隔，如果是则应用淡入
-                if i > 0 and segments[i-1].file_id == '__gap__':
-                    prev_gap_type = getattr(segments[i-1], 'gap_type', 'silence')
-                    if prev_gap_type == 'crossfade':
+                # 检查前一个是否是 crossfade 过渡，如果是则应用淡入
+                if i > 0 and (segments[i-1].file_id == '__transition__' or segments[i-1].file_id == '__gap__'):
+                    prev_trans_type = getattr(segments[i-1], 'transition_type', None) or getattr(segments[i-1], 'gap_type', 'silence')
+                    if prev_trans_type == 'crossfade':
                         fade_duration = min(int(segments[i-1].end * 1000), len(segment) // 2)
                         if fade_duration > 0:
                             segment = segment.fade_in(fade_duration)
                 
-                # 保存当前片段信息，供 AI 填充使用
+                # 保存当前片段信息，供魔法填充使用
                 prev_segment = segment
                 prev_file_id = seg.file_id
                 prev_end = seg.end
@@ -200,14 +208,14 @@ class AudioService:
         
         return output_path
     
-    async def _generate_ai_transition(
+    async def _generate_magic_transition(
         self,
         file_id: str,
         end_time: float,
         extend_duration: int
     ) -> AudioSegment | None:
         """
-        使用 PiAPI ACE-Step 生成 AI 过渡音频
+        使用 PiAPI ACE-Step 生成魔法填充过渡音频
         
         Args:
             file_id: 源音频文件 ID
@@ -259,5 +267,96 @@ class AudioService:
                 return extended_audio
                 
         except Exception as e:
-            print(f"AI transition generation failed: {e}")
+            print(f"Magic transition generation failed: {e}")
             return None
+
+    def _generate_beat_sync_transition(
+        self,
+        prev_segment: AudioSegment,
+        trans_duration_ms: int
+    ) -> AudioSegment:
+        """
+        根据节奏生成过渡音频
+        
+        使用 librosa 检测前一段音频的 BPM，然后生成节拍对齐的过渡
+        通过循环前一段的最后几个节拍来填充过渡
+        
+        Args:
+            prev_segment: 前一段音频
+            trans_duration_ms: 过渡时长（毫秒）
+        
+        Returns:
+            节拍对齐的过渡音频
+        """
+        try:
+            # 将 pydub AudioSegment 转换为 numpy 数组供 librosa 使用
+            samples = np.array(prev_segment.get_array_of_samples())
+            
+            # 如果是立体声，转换为单声道
+            if prev_segment.channels == 2:
+                samples = samples.reshape((-1, 2)).mean(axis=1)
+            
+            # 归一化
+            samples = samples.astype(np.float32) / 32768.0
+            sr = prev_segment.frame_rate
+            
+            # 使用 librosa 检测 BPM 和节拍位置
+            tempo, beat_frames = librosa.beat.beat_track(y=samples, sr=sr)
+            
+            # 将节拍帧转换为时间（秒）
+            beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+            
+            if len(beat_times) < 2:
+                # 节拍太少，降级为静音
+                return AudioSegment.silent(duration=trans_duration_ms)
+            
+            # 计算平均节拍间隔
+            beat_interval_ms = int(np.mean(np.diff(beat_times)) * 1000)
+            
+            if beat_interval_ms <= 0:
+                return AudioSegment.silent(duration=trans_duration_ms)
+            
+            # 取最后 2-4 个节拍的音频作为循环素材
+            num_beats = min(4, len(beat_times) - 1)
+            loop_start_time = beat_times[-num_beats - 1]
+            loop_end_time = beat_times[-1]
+            
+            loop_start_ms = int(loop_start_time * 1000)
+            loop_end_ms = int(loop_end_time * 1000)
+            
+            # 确保范围有效
+            loop_start_ms = max(0, loop_start_ms)
+            loop_end_ms = min(len(prev_segment), loop_end_ms)
+            
+            if loop_end_ms <= loop_start_ms:
+                return AudioSegment.silent(duration=trans_duration_ms)
+            
+            # 提取循环片段
+            loop_segment = prev_segment[loop_start_ms:loop_end_ms]
+            
+            # 应用淡入淡出使循环更平滑
+            fade_ms = min(50, len(loop_segment) // 4)
+            if fade_ms > 0:
+                loop_segment = loop_segment.fade_in(fade_ms).fade_out(fade_ms)
+            
+            # 循环填充到目标时长
+            result = AudioSegment.empty()
+            while len(result) < trans_duration_ms:
+                result += loop_segment
+            
+            # 裁剪到精确时长
+            result = result[:trans_duration_ms]
+            
+            # 整体淡出，使过渡更自然
+            fade_out_ms = min(200, trans_duration_ms // 2)
+            if fade_out_ms > 0:
+                result = result.fade_out(fade_out_ms)
+            
+            return result
+            
+        except Exception as e:
+            print(f"Beat sync generation failed: {e}")
+            return AudioSegment.silent(duration=trans_duration_ms)
+
+
+audio_service = AudioService()

@@ -16,24 +16,24 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     initUploadSection();
-    initGapTypeSelector();
+    initTransitionTypeSelector();
     loadHistoryFiles();
 });
 
-// ==================== 间隔类型选择 ====================
+// ==================== 过渡类型选择 ====================
 
-function initGapTypeSelector() {
-    document.querySelectorAll('.gap-type-option').forEach(option => {
+function initTransitionTypeSelector() {
+    document.querySelectorAll('.transition-type-option').forEach(option => {
         option.addEventListener('click', () => {
-            document.querySelectorAll('.gap-type-option').forEach(o => o.classList.remove('selected'));
+            document.querySelectorAll('.transition-type-option').forEach(o => o.classList.remove('selected'));
             option.classList.add('selected');
         });
     });
 }
 
-function getSelectedGapType() {
-    const selected = document.querySelector('.gap-type-option.selected');
-    return selected ? selected.dataset.type : 'ai_fill';
+function getSelectedTransitionType() {
+    const selected = document.querySelector('.transition-type-option.selected');
+    return selected ? selected.dataset.type : 'magicfill';
 }
 
 // ==================== 导航控制 ====================
@@ -140,12 +140,12 @@ async function startMixing() {
                         });
                     }
                 }
-            } else if (item.type === 'gap') {
+            } else if (item.type === 'transition') {
                 segments.push({
-                    file_id: '__gap__',
+                    file_id: '__transition__',
                     start: 0,
                     end: item.duration,
-                    gap_type: item.gapType || 'ai_fill'
+                    transition_type: item.transitionType || 'magicfill'
                 });
             }
         });

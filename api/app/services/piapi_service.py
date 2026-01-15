@@ -1,6 +1,6 @@
 """
 PiAPI Service - ACE-Step 音乐生成 API 集成
-用于 AI 填充音频过渡
+用于魔法填充音频过渡
 """
 
 import httpx

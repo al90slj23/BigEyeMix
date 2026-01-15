@@ -4,30 +4,31 @@
  */
 
 // API 基础地址
-const API_BASE = window.location.port === '8080' ? 'http://' + window.location.hostname + ':8000' : '';
+// 本地开发时也使用服务器 API（因为魔法填充需要公网可访问的音频 URL）
+const API_BASE = 'https://bem.it.sc.cn';
 
 // 状态管理
 const state = {
     currentStep: 1,
     totalSteps: 3,
     tracks: [], // { id, file, uploaded, info, wavesurfer, clips: [{id, start, end}], color }
-    timeline: [], // 组合时间线 [{type: 'clip', trackId, clipId} | {type: 'gap', duration, gapType}]
+    timeline: [], // 组合时间线 [{type: 'clip', trackId, clipId} | {type: 'transition', duration, transitionType}]
     previewWavesurfer: null
 };
 
-// 间隔块类型（顺序：AI填充 > 根据节奏 > 淡入淡出 > 静音）
-const gapTypes = {
-    ai_fill:   { name: 'AI 填充',   icon: 'sparkles',    color: '#8b5cf6', desc: '智能生成过渡音频' },
-    beat_sync: { name: '根据节奏',  icon: 'activity',    color: '#ec4899', desc: '基于BPM节拍对齐' },
-    crossfade: { name: '淡入淡出',  icon: 'git-merge',   color: '#f59e0b', desc: '平滑音量渐变' },
-    silence:   { name: '静音',      icon: 'volume-x',    color: '#6b7280', desc: '无声间隔' }
+// 过渡块类型（顺序：魔法填充 > 节拍对齐 > 淡出淡入 > 休止静音）
+const transitionTypes = {
+    magicfill: { name: '魔法填充',  icon: 'sparkles',    color: '#8b5cf6', desc: '智能生成过渡音频' },
+    beatsync:  { name: '节拍对齐',  icon: 'activity',    color: '#ec4899', desc: '基于BPM节拍对齐' },
+    crossfade: { name: '淡出淡入',  icon: 'git-merge',   color: '#f59e0b', desc: '平滑音量渐变' },
+    silence:   { name: '休止静音',  icon: 'volume-x',    color: '#6b7280', desc: '无声过渡' }
 };
 
-// 间隔类型顺序
-const gapTypeOrder = ['ai_fill', 'beat_sync', 'crossfade', 'silence'];
+// 过渡类型顺序
+const transitionTypeOrder = ['magicfill', 'beatsync', 'crossfade', 'silence'];
 
-// 预设间隔块（秒）- 默认使用 AI 填充
-const gapPresets = [1, 2, 3, 5, 10];
+// 预设过渡块（秒）- 默认使用魔法填充
+const transitionPresets = [1, 3, 5, 10];
 
 // 轨道标签
 const trackLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

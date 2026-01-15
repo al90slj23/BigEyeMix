@@ -118,105 +118,250 @@ input[type="file"] { display: none; }
 }
 .btn-confirm:active { transform: scale(0.98); }
 
-/* ==================== Gap Type Selector ==================== */
-.gap-type-selector {
+/* ==================== Transition Type Selector ==================== */
+.transition-type-selector {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
     margin-bottom: 8px;
 }
-.gap-type-option {
+.transition-type-option {
     padding: 12px 8px;
     border: 2px solid #e0e0e0;
     border-radius: 10px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color 0.2s, border-width 0.2s;
     position: relative;
     overflow: hidden;
 }
-.gap-type-option i {
+.transition-type-option i {
     width: 20px;
     height: 20px;
     display: block;
     margin: 0 auto 4px;
     color: #666;
+    transition: color 0.2s;
 }
-.gap-type-option span {
+.transition-type-option span {
     font-size: 11px;
     color: #666;
     display: block;
+    transition: color 0.2s;
 }
-.gap-type-option.selected {
-    border-color: var(--gap-color, #667eea);
-    background: var(--gap-bg, rgba(102, 126, 234, 0.1));
+.transition-type-option.selected {
+    border-width: 3px;
 }
-.gap-type-option.selected i { color: var(--gap-color, #667eea); }
-.gap-type-option.selected span {
-    color: var(--gap-color, #667eea);
+.transition-type-option.selected i,
+.transition-type-option.selected span {
     font-weight: 600;
 }
 
-/* AI 填充特效 - 彩虹动态 */
-.gap-type-option[data-type="ai_fill"] {
-    --gap-color: #8b5cf6;
-    --gap-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.15));
+/* ==================== 魔法填充 - 彩虹渐变流动 ==================== */
+.transition-type-option[data-type="magicfill"] {
+    background: linear-gradient(90deg, 
+        rgba(255,0,0,0.12), 
+        rgba(255,165,0,0.12), 
+        rgba(255,255,0,0.12), 
+        rgba(0,255,0,0.12), 
+        rgba(0,255,255,0.12), 
+        rgba(0,0,255,0.12), 
+        rgba(139,0,255,0.12));
+    background-size: 200% 100%;
+    animation: rainbowFlow 4s linear infinite;
 }
-.gap-type-option[data-type="ai_fill"]::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%; right: 0; bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    animation: shimmer 2s infinite;
+.transition-type-option[data-type="magicfill"] i { color: #8b5cf6; }
+.transition-type-option[data-type="magicfill"] span { color: #8b5cf6; }
+.transition-type-option[data-type="magicfill"].selected {
+    border-color: #8b5cf6;
+    background: linear-gradient(90deg, 
+        rgba(255,0,0,0.25), 
+        rgba(255,165,0,0.25), 
+        rgba(255,255,0,0.25), 
+        rgba(0,255,0,0.25), 
+        rgba(0,255,255,0.25), 
+        rgba(0,0,255,0.25), 
+        rgba(139,0,255,0.25));
+    background-size: 200% 100%;
+    animation: rainbowFlow 2s linear infinite;
 }
-@keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
-
-/* 根据节奏 */
-.gap-type-option[data-type="beat_sync"] {
-    --gap-color: #ec4899;
-    --gap-bg: rgba(236, 72, 153, 0.1);
-}
-
-/* 淡入淡出 */
-.gap-type-option[data-type="crossfade"] {
-    --gap-color: #f59e0b;
-    --gap-bg: rgba(245, 158, 11, 0.1);
-}
-
-/* 静音 */
-.gap-type-option[data-type="silence"] {
-    --gap-color: #6b7280;
-    --gap-bg: rgba(107, 114, 128, 0.1);
+@keyframes rainbowFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
 }
 
-/* Gap item styles by type */
-.gap-item.gap-ai_fill {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.2));
+/* ==================== 节拍对齐 - 脉冲波动 ==================== */
+.transition-type-option[data-type="beatsync"] {
+    background: rgba(236, 72, 153, 0.08);
+    animation: beatBg 1.2s ease-in-out infinite;
+}
+.transition-type-option[data-type="beatsync"] i { color: #ec4899; }
+.transition-type-option[data-type="beatsync"] span { color: #ec4899; }
+.transition-type-option[data-type="beatsync"].selected {
+    border-color: #ec4899;
+    animation: beatBgSelected 0.6s ease-in-out infinite;
+}
+@keyframes beatBg {
+    0%, 100% { background: rgba(236, 72, 153, 0.08); transform: scale(1); }
+    50% { background: rgba(236, 72, 153, 0.18); transform: scale(1.02); }
+}
+@keyframes beatBgSelected {
+    0%, 100% { background: rgba(236, 72, 153, 0.2); transform: scale(1); box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4); }
+    50% { background: rgba(236, 72, 153, 0.4); transform: scale(1.03); box-shadow: 0 0 12px 2px rgba(236, 72, 153, 0.3); }
+}
+
+/* ==================== 淡出淡入 - 呼吸渐变 ==================== */
+.transition-type-option[data-type="crossfade"] {
+    background: linear-gradient(90deg, 
+        rgba(255,255,255,0.95) 0%, 
+        rgba(245, 158, 11, 0.2) 50%, 
+        rgba(255,255,255,0.95) 100%);
+    background-size: 200% 100%;
+    animation: fadeBreath 3s ease-in-out infinite;
+}
+.transition-type-option[data-type="crossfade"] i { color: #f59e0b; }
+.transition-type-option[data-type="crossfade"] span { color: #f59e0b; }
+.transition-type-option[data-type="crossfade"].selected {
+    border-color: #f59e0b;
+    background: linear-gradient(90deg, 
+        rgba(255,255,255,0.9) 0%, 
+        rgba(245, 158, 11, 0.4) 50%, 
+        rgba(255,255,255,0.9) 100%);
+    background-size: 200% 100%;
+    animation: fadeBreathSelected 1.5s ease-in-out infinite;
+}
+@keyframes fadeBreath {
+    0%, 100% { background-position: 0% 50%; opacity: 0.9; }
+    50% { background-position: 100% 50%; opacity: 1; }
+}
+@keyframes fadeBreathSelected {
+    0%, 100% { background-position: 0% 50%; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+    50% { background-position: 100% 50%; box-shadow: 0 0 12px 2px rgba(245, 158, 11, 0.3); }
+}
+
+/* ==================== 休止静音 - 斜线条纹移动 ==================== */
+.transition-type-option[data-type="silence"] {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(107, 114, 128, 0.06),
+        rgba(107, 114, 128, 0.06) 4px,
+        rgba(107, 114, 128, 0.14) 4px,
+        rgba(107, 114, 128, 0.14) 8px
+    );
+    background-size: 16px 16px;
+    animation: stripeMove 2s linear infinite;
+}
+.transition-type-option[data-type="silence"] i { color: #6b7280; }
+.transition-type-option[data-type="silence"] span { color: #6b7280; }
+.transition-type-option[data-type="silence"].selected {
+    border-color: #6b7280;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(107, 114, 128, 0.12),
+        rgba(107, 114, 128, 0.12) 4px,
+        rgba(107, 114, 128, 0.28) 4px,
+        rgba(107, 114, 128, 0.28) 8px
+    );
+    background-size: 16px 16px;
+    animation: stripeMoveSelected 0.8s linear infinite;
+}
+@keyframes stripeMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 16px 16px; }
+}
+@keyframes stripeMoveSelected {
+    0% { background-position: 0 0; }
+    100% { background-position: 16px 16px; }
+}
+
+/* ==================== Transition Item (拼接条) 样式 ==================== */
+
+/* 魔法填充 - 彩虹流动 */
+.transition-item.transition-magicfill {
+    background: linear-gradient(90deg, 
+        rgba(255,0,0,0.3), 
+        rgba(255,165,0,0.3), 
+        rgba(255,255,0,0.3), 
+        rgba(0,255,0,0.3), 
+        rgba(0,255,255,0.3), 
+        rgba(0,0,255,0.3), 
+        rgba(139,0,255,0.3));
+    background-size: 200% 100%;
+    animation: rainbowFlow 3s linear infinite;
     color: #7c3aed;
     position: relative;
     overflow: hidden;
 }
-.gap-item.gap-ai_fill::before {
+
+/* 节拍对齐 - 脉冲闪烁 */
+.transition-item.transition-beatsync {
+    background: rgba(236, 72, 153, 0.25);
+    color: #db2777;
+    animation: beatBgItem 0.6s ease-in-out infinite;
+}
+@keyframes beatBgItem {
+    0%, 100% { background: rgba(236, 72, 153, 0.2); }
+    50% { background: rgba(236, 72, 153, 0.4); }
+}
+
+/* 淡出淡入 - 左右渐白 */
+.transition-item.transition-crossfade {
+    background: linear-gradient(90deg, 
+        rgba(255,255,255,0.9) 0%, 
+        rgba(245, 158, 11, 0.4) 30%, 
+        rgba(245, 158, 11, 0.4) 70%, 
+        rgba(255,255,255,0.9) 100%);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* 休止静音 - 斜线条纹 */
+.transition-item.transition-silence { 
+    background: repeating-linear-gradient(
+        45deg,
+        #e5e7eb,
+        #e5e7eb 3px,
+        #d1d5db 3px,
+        #d1d5db 6px
+    );
+    color: #4b5563;
+}
+
+/* ==================== 生成中状态 - 跑马灯边框 ==================== */
+.transition-item.generating {
+    position: relative;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.transition-item.generating::before {
     content: '';
     position: absolute;
-    top: 0; left: -100%; right: 0; bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: shimmer 2s infinite;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    background: linear-gradient(90deg, 
+        #8b5cf6, #ec4899, #f59e0b, #10b981, #3b82f6, #8b5cf6);
+    background-size: 300% 100%;
+    animation: borderMarquee 1.5s linear infinite;
+    border-radius: inherit;
+    z-index: -1;
 }
-.gap-item.gap-beat_sync {
-    background: linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(236, 72, 153, 0.15));
-    color: #db2777;
+@keyframes borderMarquee {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
 }
-.gap-item.gap-crossfade {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.15));
-    color: #d97706;
+
+/* 节拍对齐 - 脉冲效果 */
+.transition-item.transition-beatsync::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.4) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    animation: beatGlow 0.8s ease-in-out infinite;
 }
-.gap-item.gap-silence { 
-    background: #e5e7eb; 
-    color: #4b5563;
+@keyframes beatGlow {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
+    50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
 }
 
 /* ==================== Color Picker ==================== */

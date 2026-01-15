@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
-from app.models.schemas import MixRequest, MultiMixRequest, AIFillRequest
+from app.models.schemas import MixRequest, MultiMixRequest, MagicFillRequest
 from app.services.audio_service import AudioService
 from app.services.piapi_service import piapi_service
 from app.core.config import settings
@@ -143,10 +143,10 @@ async def download_mix(output_id: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.post("/ai/fill")
-async def ai_fill_transition(request: AIFillRequest):
+@router.post("/magic/fill")
+async def magic_fill_transition(request: MagicFillRequest):
     """
-    AI 填充过渡 - 使用 PiAPI ACE-Step 生成音频过渡
+    魔法填充过渡 - 使用 PiAPI ACE-Step 生成音频过渡
     
     流程：
     1. 截取源音频片段（片段 A 的结尾部分）
@@ -189,7 +189,7 @@ async def ai_fill_transition(request: AIFillRequest):
             "output_id": output_id,
             "source_segment_id": segment_id,
             "piapi_url": result_url,
-            "message": "AI fill transition created successfully"
+            "message": "Magic fill transition created successfully"
         }
         
     except Exception as e:
