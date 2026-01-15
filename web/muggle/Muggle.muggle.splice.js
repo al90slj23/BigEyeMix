@@ -96,27 +96,66 @@ async function handleMuggleGenerate() {
     try {
         muggleSpliceState.isGenerating = true;
         generateBtn.disabled = true;
-        generateBtn.innerHTML = '<i data-lucide="loader"></i> 生成中...';
+        generateBtn.innerHTML = '<i data-lucide="loader"></i> AI分析中...';
         refreshIcons();
         
         // 构建上下文信息
         const context = buildMuggleContext();
         const userDescription = input.value.trim();
         
+        // 显示生成状态
+        if (resultArea) {
+            resultArea.style.display = 'block';
+            resultContent.innerHTML = '<div class="generating-status"><i data-lucide="brain-circuit"></i> AI正在分析您的描述...</div>';
+            refreshIcons();
+        }
+        
         // 调用DeepSeek API生成拼接方案
         const result = await generateSpliceInstructions(userDescription, context);
         
-        if (result) {
+        if (result && result.success) {
             muggleSpliceState.lastResult = result;
-            resultContent.textContent = result.explanation || result;
-            resultArea.style.display = 'block';
+            
+            // 格式化显示结果
+            let displayContent = result.explanation || result;
+            
+            // 添加验证信息
+            if (result.validation_errors && result.validation_errors.length > 0) {
+                displayContent += '\n\n⚠️ 注意事项：\n' + result.validation_errors.map(err => `• ${err}`).join('\n');
+            }
+            
+            // 添加重试信息
+            if (result.retry_count && result.retry_count > 0) {
+                displayContent += `\n\n🔄 此方案经过 ${result.retry_count + 1} 次AI优化生成`;
+            }
+            
+            // 添加预估时长信息
+            if (result.estimated_duration) {
+                displayContent += `\n\n⏱️ 预估总时长：${formatTime(result.estimated_duration)}`;
+            }
+            
+            resultContent.innerHTML = `<div class="result-content">${displayContent.replace(/\n/g, '<br>')}</div>`;
+            
+            // 显示应用按钮
+            const applyBtn = document.getElementById('muggleApplyBtn');
+            const regenerateBtn = document.getElementById('muggleRegenerateBtn');
+            if (applyBtn) applyBtn.style.display = 'inline-block';
+            if (regenerateBtn) regenerateBtn.style.display = 'inline-block';
+            
         } else {
-            alert('生成失败，请重试');
+            resultContent.innerHTML = '<div class="error-content">❌ 生成失败，请检查描述后重试</div>';
+            
+            if (result && result.validation_errors) {
+                resultContent.innerHTML += '<div class="error-details">错误详情：<br>' + 
+                    result.validation_errors.map(err => `• ${err}`).join('<br>') + '</div>';
+            }
         }
         
     } catch (error) {
         console.error('麻瓜拼接生成失败:', error);
-        alert('生成失败: ' + error.message);
+        if (resultContent) {
+            resultContent.innerHTML = `<div class="error-content">❌ 生成失败: ${error.message}</div>`;
+        }
     } finally {
         muggleSpliceState.isGenerating = false;
         generateBtn.disabled = false;
@@ -154,7 +193,7 @@ function buildMuggleContext() {
 
 // 调用DeepSeek API生成拼接指令
 async function generateSpliceInstructions(userDescription, context) {
-    const prompt = `你是一个专业的音频拼接助手。用户描述了他们想要的拼接效果，请将其转换为具体的拼接指令。
+    const prompt = `你是专业的音频拼接专家。请根据用户描述生成详细的拼接方案。
 
 可用音频文件:
 ${context.tracks.map(track => 
@@ -164,21 +203,42 @@ ${context.tracks.map(track =>
     ).join(', ')}`
 ).join('\n')}
 
-可用过渡类型:
+可用处理类型:
 ${context.availableTransitions.map(t => `- ${t.name} (${t.type}): ${t.description}`).join('\n')}
 
 用户描述: "${userDescription}"
 
-请生成详细的拼接方案，包括:
-1. 具体使用哪些片段
-2. 片段的顺序
-3. 使用什么过渡效果
-4. 过渡的时长
-5. 最终的拼接效果说明
+请严格按照以下JSON格式返回拼接方案：
 
-请用中文回复，格式清晰易懂。`;
+\`\`\`json
+{
+  "explanation": "详细的拼接方案说明",
+  "instructions": [
+    {
+      "type": "clip",
+      "trackId": "轨道ID", 
+      "clipId": "片段ID"
+    },
+    {
+      "type": "transition",
+      "transitionType": "crossfade|beatsync|magicfill|silence",
+      "duration": 处理时长数值
+    }
+  ],
+  "estimated_duration": 预估总时长数值
+}
+\`\`\`
 
-    const systemPrompt = `你是一个专业的音频拼接专家，擅长理解用户的自然语言描述并转换为具体的音频拼接指令。你需要根据可用的音频文件和片段，生成详细、可执行的拼接方案。`;
+重要规则：
+1. 必须返回有效的JSON格式
+2. 指令序列必须以clip开始
+3. 不能有连续的transition指令
+4. 处理时长必须为正数且≤30秒
+5. crossfade和beatsync会减少总时长，magicfill和silence会增加总时长
+
+只返回JSON，不要添加其他说明文字。`;
+
+    const systemPrompt = `你是专业的音频拼接专家，擅长理解用户的自然语言描述并转换为结构化的音频拼接指令。你必须严格按照JSON格式返回结果，确保所有指令都是可执行的。`;
 
     try {
         const response = await fetch('/api/ai/splice', {
@@ -199,44 +259,98 @@ ${context.availableTransitions.map(t => `- ${t.name} (${t.type}): ${t.descriptio
         }
 
         const result = await response.json();
+        
+        // 检查是否有验证错误
+        if (result.validation_errors && result.validation_errors.length > 0) {
+            console.warn('AI响应验证警告:', result.validation_errors);
+        }
+        
+        // 显示重试信息
+        if (result.retry_count && result.retry_count > 0) {
+            console.info(`AI响应经过 ${result.retry_count + 1} 次尝试生成`);
+        }
+        
         return result;
         
     } catch (error) {
         console.error('DeepSeek API调用失败:', error);
         
-        // 降级到本地模拟生成
-        return generateMockSpliceInstructions(userDescription, context);
+        // 降级到本地智能模拟生成
+        return generateEnhancedMockInstructions(userDescription, context);
     }
 }
 
-// 模拟生成拼接指令（当API不可用时）
-function generateMockSpliceInstructions(userDescription, context) {
+// 增强的本地模拟生成（当API不可用时）
+function generateEnhancedMockInstructions(userDescription, context) {
     const tracks = context.tracks;
     if (tracks.length === 0) return null;
     
-    // 简单的模拟逻辑
+    // 智能分析用户意图
+    const intent = analyzeUserIntent(userDescription);
+    
     let instructions = `根据您的描述"${userDescription}"，我为您生成了以下拼接方案：\n\n`;
+    let estimatedDuration = 0;
     
     if (tracks.length >= 2) {
         const track1 = tracks[0];
         const track2 = tracks[1];
+        const clip1Duration = track1.clips[0].end - track1.clips[0].start;
+        const clip2Duration = track2.clips[0].end - track2.clips[0].start;
         
         instructions += `1. 使用 ${track1.label}1 片段 (${formatTime(track1.clips[0].start)} - ${formatTime(track1.clips[0].end)})\n`;
-        instructions += `2. 添加 3秒 淡化过渡\n`;
+        instructions += `2. 添加 ${intent.duration}秒 ${intent.name}\n`;
         instructions += `3. 使用 ${track2.label}1 片段 (${formatTime(track2.clips[0].start)} - ${formatTime(track2.clips[0].end)})\n\n`;
-        instructions += `最终效果: 两段音频通过淡化过渡平滑连接，总时长约 ${formatTime(track1.clips[0].end - track1.clips[0].start + track2.clips[0].end - track2.clips[0].start + 3)}`;
+        
+        // 计算总时长
+        if (intent.type === 'crossfade' || intent.type === 'beatsync') {
+            estimatedDuration = clip1Duration + clip2Duration - intent.duration;
+        } else {
+            estimatedDuration = clip1Duration + clip2Duration + intent.duration;
+        }
+        
+        instructions += `最终效果: 两段音频通过${intent.name}连接，总时长约 ${formatTime(estimatedDuration)}`;
     } else {
         const track = tracks[0];
+        const clipDuration = track.clips[0].end - track.clips[0].start;
+        const midTime = (track.clips[0].start + track.clips[0].end) / 2;
+        
         instructions += `1. 使用 ${track.label}1 片段的前半部分\n`;
-        instructions += `2. 添加 2秒 静音填充\n`;
+        instructions += `2. 添加 ${intent.duration}秒 ${intent.name}\n`;
         instructions += `3. 使用 ${track.label}1 片段的后半部分\n\n`;
-        instructions += `最终效果: 单个音频文件中间插入静音间隔`;
+        
+        estimatedDuration = clipDuration + intent.duration;
+        instructions += `最终效果: 单个音频文件中间插入${intent.name}`;
     }
     
     return {
         explanation: instructions,
-        instructions: [] // 这里可以添加具体的执行指令
+        instructions: [], // 这里可以添加具体的执行指令
+        success: true,
+        estimated_duration: estimatedDuration
     };
+}
+
+// 分析用户意图，智能选择处理类型
+function analyzeUserIntent(userDescription) {
+    const desc = userDescription.toLowerCase();
+    
+    // 关键词映射和智能分析
+    if (desc.includes('平滑') || desc.includes('柔和') || desc.includes('淡化') || desc.includes('渐变')) {
+        return { type: 'crossfade', name: '淡化过渡', duration: 3 };
+    } else if (desc.includes('节拍') || desc.includes('同步') || desc.includes('对齐') || desc.includes('律动')) {
+        return { type: 'beatsync', name: '节拍过渡', duration: 2 };
+    } else if (desc.includes('魔法') || desc.includes('ai') || desc.includes('智能') || desc.includes('生成')) {
+        return { type: 'magicfill', name: '魔法填充', duration: 5 };
+    } else if (desc.includes('静音') || desc.includes('间隔') || desc.includes('暂停') || desc.includes('空白')) {
+        return { type: 'silence', name: '静音填充', duration: 2 };
+    } else if (desc.includes('快') || desc.includes('短')) {
+        return { type: 'crossfade', name: '淡化过渡', duration: 1 };
+    } else if (desc.includes('长') || desc.includes('慢')) {
+        return { type: 'magicfill', name: '魔法填充', duration: 8 };
+    } else {
+        // 默认使用淡化过渡
+        return { type: 'crossfade', name: '淡化过渡', duration: 3 };
+    }
 }
 
 // 处理应用麻瓜拼接方案

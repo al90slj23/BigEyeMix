@@ -1,97 +1,410 @@
 """
 麻瓜拼接 API - 使用 DeepSeek AI 理解用户描述并生成拼接指令
+采用结构化输出和多层验证机制确保稳定性
 """
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Dict, List, Any, Optional
+from pydantic import BaseModel, Field, validator
+from typing import Dict, List, Any, Optional, Union, Literal
 import httpx
 import json
 import os
 import logging
+import re
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# 定义处理类型枚举
+class ProcessingType(str, Enum):
+    CROSSFADE = "crossfade"  # 淡化过渡
+    BEATSYNC = "beatsync"    # 节拍过渡
+    MAGICFILL = "magicfill"  # 魔法填充
+    SILENCE = "silence"      # 静音填充
+
+# 定义指令类型枚举
+class InstructionType(str, Enum):
+    CLIP = "clip"
+    TRANSITION = "transition"
+
+# 片段指令模型
+class ClipInstruction(BaseModel):
+    type: Literal["clip"] = "clip"
+    trackId: str = Field(..., description="轨道ID")
+    clipId: str = Field(..., description="片段ID")
+    customStart: Optional[float] = Field(None, description="自定义开始时间（秒）")
+    customEnd: Optional[float] = Field(None, description="自定义结束时间（秒）")
+    
+    @validator('customStart', 'customEnd')
+    def validate_time(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("时间不能为负数")
+        return v
+
+# 过渡指令模型
+class TransitionInstruction(BaseModel):
+    type: Literal["transition"] = "transition"
+    transitionType: ProcessingType = Field(..., description="处理类型")
+    duration: float = Field(..., gt=0, le=30, description="处理时长（秒），必须大于0且小于等于30")
+
+# 结构化AI响应模型
+class StructuredAIResponse(BaseModel):
+    explanation: str = Field(..., description="拼接方案的详细说明")
+    instructions: List[Union[ClipInstruction, TransitionInstruction]] = Field(
+        ..., 
+        description="可执行的拼接指令序列",
+        min_items=1
+    )
+    estimated_duration: float = Field(..., gt=0, description="预估总时长（秒）")
+    
+    @validator('instructions')
+    def validate_instructions_sequence(cls, v):
+        if not v:
+            raise ValueError("指令序列不能为空")
+        
+        # 验证指令序列的合理性
+        clip_count = sum(1 for inst in v if inst.type == "clip")
+        transition_count = sum(1 for inst in v if inst.type == "transition")
+        
+        if clip_count == 0:
+            raise ValueError("至少需要一个片段指令")
+        
+        # 检查指令顺序：不能连续两个过渡，不能以过渡开始
+        if v[0].type == "transition":
+            raise ValueError("不能以过渡指令开始")
+        
+        for i in range(len(v) - 1):
+            if v[i].type == "transition" and v[i + 1].type == "transition":
+                raise ValueError("不能有连续的过渡指令")
+        
+        return v
+
+# API请求模型
 class MuggleSpliceRequest(BaseModel):
     prompt: str
     system_prompt: str
     context: Dict[str, Any]
     user_description: str
 
+# API响应模型
 class MuggleSpliceResponse(BaseModel):
     explanation: str
     instructions: Optional[List[Dict[str, Any]]] = None
     success: bool = True
+    validation_errors: Optional[List[str]] = None
+    retry_count: Optional[int] = None
 
 @router.post("/ai/splice", response_model=MuggleSpliceResponse)
 async def generate_muggle_splice(request: MuggleSpliceRequest):
     """
     使用 DeepSeek AI 生成麻瓜拼接方案
+    采用结构化输出和多层验证机制
     """
+    max_retries = 3
+    validation_errors = []
+    
+    for retry_count in range(max_retries):
+        try:
+            # 获取 DeepSeek API 密钥
+            deepseek_key = os.getenv('APIKEY_MacOS_Code_DeepSeek')
+            moonshot_key = os.getenv('APIKEY_MacOS_Code_MoonShot')
+            
+            if not deepseek_key and not moonshot_key:
+                logger.warning("未配置 AI API 密钥，使用模拟响应")
+                return generate_enhanced_mock_response(request)
+            
+            # 选择 API
+            if deepseek_key:
+                api_url = "https://api.deepseek.com/chat/completions"
+                api_key = deepseek_key
+                model = "deepseek-chat"
+            else:
+                api_url = "https://api.moonshot.cn/v1/chat/completions"
+                api_key = moonshot_key
+                model = "moonshot-v1-8k"
+            
+            # 构建结构化提示词
+            structured_prompt = build_structured_prompt(request, retry_count, validation_errors)
+            
+            # 构建请求数据
+            data = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": request.system_prompt},
+                    {"role": "user", "content": structured_prompt}
+                ],
+                "temperature": 0.1 if retry_count > 0 else 0.3,  # 重试时降低温度
+                "max_tokens": 2000
+            }
+            
+            # 调用 AI API
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    api_url,
+                    json=data,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {api_key}"
+                    }
+                )
+                
+                if response.status_code != 200:
+                    logger.error(f"AI API 调用失败: {response.status_code} - {response.text}")
+                    if retry_count == max_retries - 1:
+                        return generate_enhanced_mock_response(request)
+                    continue
+                
+                result = response.json()
+                ai_response = result["choices"][0]["message"]["content"].strip()
+                
+                # 解析和验证AI响应
+                parsed_result = parse_and_validate_ai_response(ai_response, request.context)
+                
+                if parsed_result["success"]:
+                    return MuggleSpliceResponse(
+                        explanation=parsed_result["explanation"],
+                        instructions=convert_to_legacy_format(parsed_result["instructions"]),
+                        success=True,
+                        retry_count=retry_count
+                    )
+                else:
+                    validation_errors.extend(parsed_result["errors"])
+                    if retry_count == max_retries - 1:
+                        # 最后一次重试失败，返回增强的模拟响应
+                        return generate_enhanced_mock_response(request, validation_errors)
+                    
+        except Exception as e:
+            logger.error(f"麻瓜拼接生成失败 (重试 {retry_count + 1}): {str(e)}")
+            validation_errors.append(f"API调用异常: {str(e)}")
+            if retry_count == max_retries - 1:
+                return generate_enhanced_mock_response(request, validation_errors)
+
+def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, validation_errors: List[str]) -> str:
+    """
+    构建结构化提示词，强制JSON输出格式
+    """
+    context = request.context
+    tracks = context.get("tracks", [])
+    user_desc = request.user_description
+    
+    # 构建轨道信息
+    tracks_info = ""
+    for track in tracks:
+        clips_info = []
+        for clip in track.get("clips", []):
+            clips_info.append(f"  - {track['label']}{clip['id']}: {format_time(clip['start'])} - {format_time(clip['end'])} (时长 {format_time(clip['duration'])})")
+        
+        tracks_info += f"轨道 {track['label']} ({track.get('name', '未知文件')}):\n"
+        tracks_info += "\n".join(clips_info) + "\n\n"
+    
+    # 重试时的错误反馈
+    retry_feedback = ""
+    if retry_count > 0 and validation_errors:
+        retry_feedback = f"""
+上次生成失败，错误信息：
+{chr(10).join(f"- {error}" for error in validation_errors[-3:])}
+
+请修正这些问题并重新生成。
+"""
+    
+    # 构建结构化提示词
+    prompt = f"""你是专业的音频拼接专家。请根据用户描述生成详细的拼接方案。
+
+{retry_feedback}
+
+可用音频资源：
+{tracks_info}
+
+用户描述："{user_desc}"
+
+处理类型说明：
+- crossfade (淡化过渡): 两段音频平滑过渡，会减少总时长
+- beatsync (节拍过渡): 按节拍对齐过渡，会减少总时长  
+- magicfill (魔法填充): AI生成过渡音频，会增加总时长
+- silence (静音填充): 插入静音间隔，会增加总时长
+
+重要规则：
+1. 必须返回有效的JSON格式
+2. 指令序列必须以clip开始，不能以transition开始
+3. 不能有连续的transition指令
+4. 时长必须为正数且合理（≤30秒）
+5. 必须包含至少一个clip指令
+
+请严格按照以下JSON格式返回：
+
+```json
+{{
+  "explanation": "详细的拼接方案说明，包括使用的片段、处理类型、预期效果等",
+  "instructions": [
+    {{
+      "type": "clip",
+      "trackId": "轨道ID",
+      "clipId": "片段ID",
+      "customStart": 可选的自定义开始时间,
+      "customEnd": 可选的自定义结束时间
+    }},
+    {{
+      "type": "transition", 
+      "transitionType": "crossfade|beatsync|magicfill|silence",
+      "duration": 处理时长数值
+    }}
+  ],
+  "estimated_duration": 预估总时长数值
+}}
+```
+
+只返回JSON，不要添加任何其他文字说明。"""
+
+    return prompt
+
+def parse_and_validate_ai_response(ai_response: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    解析和验证AI响应，使用多层验证机制
+    """
+    errors = []
+    
     try:
-        # 获取 DeepSeek API 密钥
-        deepseek_key = os.getenv('APIKEY_MacOS_Code_DeepSeek')
-        moonshot_key = os.getenv('APIKEY_MacOS_Code_MoonShot')
+        # 第一层：JSON格式验证
+        json_content = extract_json_from_response(ai_response)
+        if not json_content:
+            return {"success": False, "errors": ["无法从响应中提取有效的JSON格式"]}
         
-        if not deepseek_key and not moonshot_key:
-            logger.warning("未配置 AI API 密钥，使用模拟响应")
-            return generate_mock_response(request)
+        parsed_json = json.loads(json_content)
         
-        # 选择 API
-        if deepseek_key:
-            api_url = "https://api.deepseek.com/chat/completions"
-            api_key = deepseek_key
-            model = "deepseek-chat"
-        else:
-            api_url = "https://api.moonshot.cn/v1/chat/completions"
-            api_key = moonshot_key
-            model = "moonshot-v1-8k"
+        # 第二层：结构验证
+        try:
+            validated_response = StructuredAIResponse(**parsed_json)
+        except Exception as e:
+            return {"success": False, "errors": [f"JSON结构验证失败: {str(e)}"]}
         
-        # 构建请求数据
-        data = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": request.system_prompt},
-                {"role": "user", "content": request.prompt}
-            ],
-            "temperature": 0.3,
-            "max_tokens": 1500
+        # 第三层：语义验证
+        semantic_errors = validate_semantic_logic(validated_response, context)
+        if semantic_errors:
+            return {"success": False, "errors": semantic_errors}
+        
+        # 验证通过
+        return {
+            "success": True,
+            "explanation": validated_response.explanation,
+            "instructions": validated_response.instructions,
+            "estimated_duration": validated_response.estimated_duration
         }
         
-        # 调用 AI API
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                api_url,
-                json=data,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}"
-                }
-            )
-            
-            if response.status_code != 200:
-                logger.error(f"AI API 调用失败: {response.status_code} - {response.text}")
-                return generate_mock_response(request)
-            
-            result = response.json()
-            ai_response = result["choices"][0]["message"]["content"].strip()
-            
-            return MuggleSpliceResponse(
-                explanation=ai_response,
-                instructions=parse_ai_instructions(ai_response, request.context),
-                success=True
-            )
-            
+    except json.JSONDecodeError as e:
+        return {"success": False, "errors": [f"JSON解析失败: {str(e)}"]}
     except Exception as e:
-        logger.error(f"麻瓜拼接生成失败: {str(e)}")
-        # 降级到模拟响应
-        return generate_mock_response(request)
+        return {"success": False, "errors": [f"响应处理异常: {str(e)}"]}
 
-def generate_mock_response(request: MuggleSpliceRequest) -> MuggleSpliceResponse:
+def extract_json_from_response(response: str) -> Optional[str]:
     """
-    生成模拟响应（当 AI API 不可用时）
+    从AI响应中提取JSON内容，支持多种格式
+    """
+    # 移除markdown代码块标记
+    response = re.sub(r'```json\s*', '', response)
+    response = re.sub(r'```\s*$', '', response)
+    
+    # 尝试直接解析整个响应
+    response = response.strip()
+    if response.startswith('{') and response.endswith('}'):
+        return response
+    
+    # 尝试提取JSON对象
+    json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+    matches = re.findall(json_pattern, response, re.DOTALL)
+    
+    for match in matches:
+        try:
+            json.loads(match)  # 验证是否为有效JSON
+            return match
+        except:
+            continue
+    
+    return None
+
+def validate_semantic_logic(response: StructuredAIResponse, context: Dict[str, Any]) -> List[str]:
+    """
+    验证响应的语义逻辑合理性
+    """
+    errors = []
+    tracks = context.get("tracks", [])
+    track_ids = {track["id"] for track in tracks}
+    
+    # 验证轨道和片段引用的有效性
+    for instruction in response.instructions:
+        if instruction.type == "clip":
+            if instruction.trackId not in track_ids:
+                errors.append(f"引用了不存在的轨道ID: {instruction.trackId}")
+                continue
+            
+            # 查找对应轨道
+            track = next((t for t in tracks if t["id"] == instruction.trackId), None)
+            if track:
+                clip_ids = {clip["id"] for clip in track.get("clips", [])}
+                if instruction.clipId not in clip_ids:
+                    errors.append(f"轨道 {instruction.trackId} 中不存在片段ID: {instruction.clipId}")
+    
+    # 验证时长估算的合理性
+    total_clip_duration = 0
+    total_transition_duration = 0
+    overlap_duration = 0
+    
+    for instruction in response.instructions:
+        if instruction.type == "clip":
+            # 查找片段实际时长
+            track = next((t for t in tracks if t["id"] == instruction.trackId), None)
+            if track:
+                clip = next((c for c in track.get("clips", []) if c["id"] == instruction.clipId), None)
+                if clip:
+                    if instruction.customStart is not None and instruction.customEnd is not None:
+                        total_clip_duration += instruction.customEnd - instruction.customStart
+                    else:
+                        total_clip_duration += clip["duration"]
+        elif instruction.type == "transition":
+            total_transition_duration += instruction.duration
+            if instruction.transitionType in ["crossfade", "beatsync"]:
+                overlap_duration += instruction.duration
+    
+    # 计算预期时长
+    expected_duration = total_clip_duration + total_transition_duration - overlap_duration
+    duration_diff = abs(response.estimated_duration - expected_duration)
+    
+    if duration_diff > 5:  # 允许5秒误差
+        errors.append(f"预估时长 {response.estimated_duration:.1f}s 与计算时长 {expected_duration:.1f}s 差异过大")
+    
+    return errors
+
+def convert_to_legacy_format(instructions: List[Union[ClipInstruction, TransitionInstruction]]) -> List[Dict[str, Any]]:
+    """
+    将结构化指令转换为前端兼容的格式
+    """
+    legacy_instructions = []
+    
+    for instruction in instructions:
+        if isinstance(instruction, ClipInstruction):
+            legacy_inst = {
+                "type": "clip",
+                "trackId": instruction.trackId,
+                "clipId": instruction.clipId
+            }
+            if instruction.customStart is not None:
+                legacy_inst["customStart"] = instruction.customStart
+            if instruction.customEnd is not None:
+                legacy_inst["customEnd"] = instruction.customEnd
+        else:  # TransitionInstruction
+            legacy_inst = {
+                "type": "transition",
+                "transitionType": instruction.transitionType,
+                "duration": instruction.duration
+            }
+        
+        legacy_instructions.append(legacy_inst)
+    
+    return legacy_instructions
+def generate_enhanced_mock_response(request: MuggleSpliceRequest, validation_errors: Optional[List[str]] = None) -> MuggleSpliceResponse:
+    """
+    生成增强的模拟响应（当 AI API 不可用时）
     """
     context = request.context
     tracks = context.get("tracks", [])
@@ -100,35 +413,48 @@ def generate_mock_response(request: MuggleSpliceRequest) -> MuggleSpliceResponse
     if not tracks:
         return MuggleSpliceResponse(
             explanation="没有可用的音频文件，请先上传音频。",
-            success=False
+            success=False,
+            validation_errors=["没有可用的音频轨道"]
         )
     
-    # 生成简单的拼接方案
+    # 生成智能拼接方案
     explanation = f'根据您的描述"{user_desc}"，我为您生成了以下拼接方案：\n\n'
+    instructions = []
     
     if len(tracks) >= 2:
+        # 多轨道拼接方案
         track1 = tracks[0]
         track2 = tracks[1]
         clip1 = track1["clips"][0] if track1["clips"] else None
         clip2 = track2["clips"][0] if track2["clips"] else None
         
         if clip1 and clip2:
+            # 分析用户描述选择合适的过渡类型
+            transition_type = analyze_user_intent(user_desc)
+            transition_duration = 3.0
+            
             explanation += f'1. 使用 {track1["label"]}1 片段 ({format_time(clip1["start"])} - {format_time(clip1["end"])})\n'
-            explanation += f'2. 添加 3秒 淡化过渡\n'
+            explanation += f'2. 添加 {transition_duration}秒 {get_transition_name(transition_type)}\n'
             explanation += f'3. 使用 {track2["label"]}1 片段 ({format_time(clip2["start"])} - {format_time(clip2["end"])})\n\n'
             
-            total_duration = clip1["duration"] + clip2["duration"] + 3
-            explanation += f'最终效果: 两段音频通过淡化过渡平滑连接，总时长约 {format_time(total_duration)}'
+            # 计算总时长
+            if transition_type in ["crossfade", "beatsync"]:
+                total_duration = clip1["duration"] + clip2["duration"] - transition_duration
+            else:
+                total_duration = clip1["duration"] + clip2["duration"] + transition_duration
+            
+            explanation += f'最终效果: 两段音频通过{get_transition_name(transition_type)}连接，总时长约 {format_time(total_duration)}'
             
             instructions = [
                 {"type": "clip", "trackId": track1["id"], "clipId": clip1["id"]},
-                {"type": "transition", "transitionType": "crossfade", "duration": 3},
+                {"type": "transition", "transitionType": transition_type, "duration": transition_duration},
                 {"type": "clip", "trackId": track2["id"], "clipId": clip2["id"]}
             ]
         else:
             explanation += "音频片段信息不完整，请检查上传的文件。"
             instructions = []
     else:
+        # 单轨道拼接方案
         track = tracks[0]
         clip = track["clips"][0] if track["clips"] else None
         
@@ -151,14 +477,51 @@ def generate_mock_response(request: MuggleSpliceRequest) -> MuggleSpliceResponse
     return MuggleSpliceResponse(
         explanation=explanation,
         instructions=instructions,
-        success=True
+        success=True,
+        validation_errors=validation_errors
     )
+
+def analyze_user_intent(user_description: str) -> str:
+    """
+    分析用户描述，智能选择合适的过渡类型
+    """
+    desc_lower = user_description.lower()
+    
+    # 关键词映射
+    if any(word in desc_lower for word in ["平滑", "柔和", "淡化", "渐变", "smooth", "fade"]):
+        return "crossfade"
+    elif any(word in desc_lower for word in ["节拍", "同步", "对齐", "beat", "sync", "rhythm"]):
+        return "beatsync"
+    elif any(word in desc_lower for word in ["魔法", "ai", "智能", "生成", "magic", "intelligent"]):
+        return "magicfill"
+    elif any(word in desc_lower for word in ["静音", "间隔", "暂停", "silence", "pause", "gap"]):
+        return "silence"
+    else:
+        # 默认使用淡化过渡
+        return "crossfade"
+
+def get_transition_name(transition_type: str) -> str:
+    """
+    获取过渡类型的中文名称
+    """
+    names = {
+        "crossfade": "淡化过渡",
+        "beatsync": "节拍过渡", 
+        "magicfill": "魔法填充",
+        "silence": "静音填充"
+    }
+    return names.get(transition_type, "淡化过渡")
 
 def parse_ai_instructions(ai_response: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
-    解析 AI 响应，提取可执行的指令
-    这是一个简化版本，实际实现需要更复杂的 NLP 解析
+    解析 AI 响应，提取可执行的指令（保留用于向后兼容）
     """
+    # 尝试使用新的结构化解析
+    parsed_result = parse_and_validate_ai_response(ai_response, context)
+    if parsed_result["success"]:
+        return convert_to_legacy_format(parsed_result["instructions"])
+    
+    # 降级到原有的关键词匹配解析
     instructions = []
     tracks = context.get("tracks", [])
     
