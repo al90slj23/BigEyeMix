@@ -409,6 +409,9 @@
 .timeline-item.transition-item.processing {
     position: relative;
     animation: processingPulse 2s ease-in-out infinite;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-origin: border-box;
 }
 
 .timeline-item.transition-item.magic-loading::before,
@@ -428,7 +431,14 @@
         #667eea 100%);
     background-size: 200% 100%;
     animation: marqueeBorder 2s linear infinite;
-    z-index: -1;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.timeline-item.transition-item.magic-loading .item-label,
+.timeline-item.transition-item.processing .item-label {
+    position: relative;
+    z-index: 1;
 }
 
 @keyframes marqueeBorder {
