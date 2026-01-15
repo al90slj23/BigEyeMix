@@ -80,8 +80,10 @@ function renderEditorAndTimeline() {
         
         <div class="timeline-section">
             <div class="timeline-title">
-                <i data-lucide="layers"></i> 音频混剪拼接
+                <i data-lucide="layers"></i> 拼接
                 <span class="timeline-hint">拖拽片段到下方排列</span>
+            </div>
+            
             <div class="available-blocks">
                 <div class="blocks-row">
                     <div class="blocks-label">片段</div>
