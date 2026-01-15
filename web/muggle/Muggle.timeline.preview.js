@@ -30,6 +30,89 @@ function renderPreviewSegments() {
     refreshIcons();
 }
 
+/**
+ * 拼接波形数据
+ * 从各个片段的完整波形中提取对应时间段，然后拼接成预览波形
+ */
+async function stitchWaveformData(segments) {
+    const stitchedPeaks = [];
+    let totalSamples = 0;
+    
+    for (const seg of segments) {
+        if (seg.type === 'clip') {
+            // 获取完整音频的波形数据
+            try {
+                const response = await axios.get(API_BASE + `/api/uploads/${seg.file_id}/waveform`);
+                if (response.data.success && response.data.waveform) {
+                    const fullWaveform = response.data.waveform;
+                    const fullDuration = response.data.duration;
+                    const fullPeaks = fullWaveform.waveform || fullWaveform.peaks || [];
+                    
+                    // 计算片段在完整波形中的采样点范围
+                    const startRatio = seg.start / fullDuration;
+                    const endRatio = seg.end / fullDuration;
+                    const startIndex = Math.floor(startRatio * fullPeaks.length);
+                    const endIndex = Math.ceil(endRatio * fullPeaks.length);
+                    
+                    // 提取片段波形
+                    const segmentPeaks = fullPeaks.slice(startIndex, endIndex);
+                    stitchedPeaks.push(...segmentPeaks);
+                    totalSamples += segmentPeaks.length;
+                    
+                    console.log(`[Preview] Extracted ${segmentPeaks.length} peaks from ${seg.file_id} (${seg.start}s - ${seg.end}s)`);
+                } else {
+                    // 没有缓存波形，使用占位数据
+                    const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                    stitchedPeaks.push(...new Array(estimatedSamples).fill(0.5));
+                    totalSamples += estimatedSamples;
+                }
+            } catch (error) {
+                console.log(`[Preview] Failed to get waveform for ${seg.file_id}:`, error);
+                // 使用占位数据
+                const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                stitchedPeaks.push(...new Array(estimatedSamples).fill(0.5));
+                totalSamples += estimatedSamples;
+            }
+        } else if (seg.type === 'transition') {
+            // 过渡块
+            if (seg.transition_type === 'magicfill' && seg.magic_output_id) {
+                // 如果魔法填充已生成，获取其波形
+                try {
+                    const response = await axios.get(API_BASE + `/api/uploads/${seg.magic_output_id}/waveform`);
+                    if (response.data.success && response.data.waveform) {
+                        const magicPeaks = response.data.waveform.waveform || response.data.waveform.peaks || [];
+                        stitchedPeaks.push(...magicPeaks);
+                        totalSamples += magicPeaks.length;
+                        console.log(`[Preview] Added magic fill waveform: ${magicPeaks.length} peaks`);
+                    } else {
+                        // 占位数据
+                        const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                        stitchedPeaks.push(...new Array(estimatedSamples).fill(0.3));
+                        totalSamples += estimatedSamples;
+                    }
+                } catch (error) {
+                    const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                    stitchedPeaks.push(...new Array(estimatedSamples).fill(0.3));
+                    totalSamples += estimatedSamples;
+                }
+            } else {
+                // 其他过渡类型（静音、淡入淡出等）使用低幅度波形
+                const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                const amplitude = seg.transition_type === 'silence' ? 0.05 : 0.3;
+                stitchedPeaks.push(...new Array(estimatedSamples).fill(amplitude));
+                totalSamples += estimatedSamples;
+            }
+        }
+    }
+    
+    console.log(`[Preview] Stitched waveform: ${totalSamples} total samples`);
+    
+    return {
+        peaks: stitchedPeaks,
+        duration: previewTotalDuration
+    };
+}
+
 function updatePreviewWaveform() {
     if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
     // 取消当前加载标志，允许新的预览请求
@@ -78,11 +161,15 @@ async function doUpdatePreview() {
         }
     }, 100);
     
+    // 构建预览片段信息
     const segments = [];
     previewSegments = [];
     let currentTime = 0;
+    let totalDuration = 0;
 
-    state.timeline.forEach((item, index) => {
+    for (let index = 0; index < state.timeline.length; index++) {
+        const item = state.timeline[index];
+        
         if (item.type === 'clip') {
             const track = state.tracks.find(t => t.id === item.trackId);
             if (track && track.uploaded) {
@@ -90,42 +177,51 @@ async function doUpdatePreview() {
                 if (clip) {
                     const duration = clip.end - clip.start;
                     segments.push({
+                        type: 'clip',
                         file_id: track.uploaded.file_id,
                         start: clip.start,
-                        end: clip.end
+                        end: clip.end,
+                        duration: duration
                     });
                     previewSegments.push({
                         index: index,
                         start: currentTime,
                         end: currentTime + duration,
                         color: track.color.bg,
-                        label: track.label + clip.id
+                        label: track.label + clip.id,
+                        type: 'clip'
                     });
                     currentTime += duration;
+                    totalDuration += duration;
                 }
             }
         } else if (item.type === 'transition') {
             const transType = item.transitionType || 'magicfill';
+            const duration = item.duration;
+            
             segments.push({
-                file_id: '__transition__',
-                start: 0,
-                end: item.duration,
-                transition_type: transType
+                type: 'transition',
+                transition_type: transType,
+                duration: duration,
+                magic_output_id: item.magicOutputId || null  // 如果已生成，使用缓存
             });
+            
             previewSegments.push({
                 index: index,
                 start: currentTime,
-                end: currentTime + item.duration,
+                end: currentTime + duration,
                 color: '#e0e0e0',
-                label: item.duration + 's',
-                isMagicFill: transType === 'magicfill',
+                label: duration + 's',
+                type: 'transition',
+                transitionType: transType,
                 magicState: item.magicState || (transType === 'magicfill' ? 'magic-loading' : '')
             });
-            currentTime += item.duration;
+            currentTime += duration;
+            totalDuration += duration;
         }
-    });
+    }
     
-    previewTotalDuration = currentTime;
+    previewTotalDuration = totalDuration;
     
     if (segments.length === 0) {
         isPreviewLoading = false;
@@ -134,22 +230,15 @@ async function doUpdatePreview() {
     }
     
     try {
-        const response = await axios.post(API_BASE + '/api/mix/preview', {
-            segments: segments,
-            transition_type: state.selectedScene || 'cut'
-        });
-        
-        const previewId = response.data.preview_id;
-        currentPreviewId = previewId;  // 记录当前预览 ID
-        const previewUrl = API_BASE + `/api/audio/${previewId}`;
-        const waveformData = response.data.waveform;  // 预计算的波形数据
-        
-        console.log(`[Preview] Generated new preview: ${previewId}`);
+        // 前端拼接波形数据
+        console.log('[Preview] Building waveform from segments...');
+        const stitchedWaveform = await stitchWaveformData(segments);
         
         // 渲染预览片段条
         renderPreviewSegments();
         
-        initPreviewWavesurfer(previewUrl, waveformData);
+        // 使用拼接的波形数据初始化预览
+        initPreviewWavesurferWithStitchedData(segments, stitchedWaveform);
         
     } catch (error) {
         console.log('[Preview] Generation failed:', error);
@@ -158,7 +247,11 @@ async function doUpdatePreview() {
     }
 }
 
-function initPreviewWavesurfer(previewUrl, waveformData) {
+/**
+ * 使用拼接的波形数据初始化预览 wavesurfer
+ * 使用 peaks 数据直接渲染波形，不加载实际音频
+ */
+function initPreviewWavesurferWithStitchedData(segments, waveformData) {
     const previewLoading = document.getElementById('previewLoading');
     const previewWaveformEl = document.getElementById('previewWaveform');
     const previewPlayBtn = document.getElementById('previewPlayBtn');
@@ -184,7 +277,7 @@ function initPreviewWavesurfer(previewUrl, waveformData) {
         refreshIcons();
     };
     
-    // 主波形 - 使用主题蓝紫渐变色
+    // 主波形 - 使用拼接的波形数据
     const wavesurfer = WaveSurfer.create({
         container: previewWaveformEl,
         waveColor: '#a78bfa',
@@ -200,17 +293,15 @@ function initPreviewWavesurfer(previewUrl, waveformData) {
         minPxPerSec: 1
     });
     
-    // 使用预计算波形数据加速加载
-    if (waveformData && waveformData.peaks && waveformData.duration) {
-        console.log('[Preview] Loading with cached waveform data');
-        wavesurfer.load(previewUrl, [waveformData.peaks], waveformData.duration);
-    } else {
-        console.log('[Preview] Loading without cache');
-        wavesurfer.load(previewUrl);
-    }
+    // 创建一个空的音频 URL（用于 wavesurfer，但实际不播放）
+    const dummyUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+    
+    // 使用拼接的波形数据
+    console.log(`[Preview] Loading stitched waveform: ${waveformData.peaks.length} peaks, ${waveformData.duration}s`);
+    wavesurfer.load(dummyUrl, [waveformData.peaks], waveformData.duration);
     state.previewWavesurfer = wavesurfer;
 
-    // 导航条波形 - 同样使用主题色
+    // 导航条波形
     let navigatorWavesurfer = null;
     if (navigatorWaveEl) {
         navigatorWavesurfer = WaveSurfer.create({
@@ -225,12 +316,7 @@ function initPreviewWavesurfer(previewUrl, waveformData) {
             normalize: true,
             interact: false
         });
-        // 使用预计算波形数据
-        if (waveformData && waveformData.peaks && waveformData.duration) {
-            navigatorWavesurfer.load(previewUrl, [waveformData.peaks], waveformData.duration);
-        } else {
-            navigatorWavesurfer.load(previewUrl);
-        }
+        navigatorWavesurfer.load(dummyUrl, [waveformData.peaks], waveformData.duration);
         state.previewNavigatorWavesurfer = navigatorWavesurfer;
     }
     
