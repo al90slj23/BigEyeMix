@@ -413,7 +413,7 @@ function initWaveform(track) {
     wavesurfer.on('ready', () => {
         if (loadingEl) loadingEl.style.display = 'none';
         waveformEl.style.display = 'block';
-        if (playBtn) playBtn.disabled = false;
+        // 不要立即启用播放按钮，等待音频加载完成
         
         // 延迟初始化标尺位置，等待渲染完成
         setTimeout(() => {
@@ -422,8 +422,15 @@ function initWaveform(track) {
         }, 100);
     });
     
+    // 当音频真正可以播放时才启用播放按钮
+    wavesurfer.on('decode', () => {
+        if (playBtn) playBtn.disabled = false;
+        console.log(`[Waveform] Audio decoded and ready to play for track ${track.id}`);
+    });
+    
     wavesurfer.on('error', () => {
         if (loadingEl) loadingEl.innerHTML = '<div class="waveform-error">波形加载失败</div>';
+        if (playBtn) playBtn.disabled = true;
     });
     
     const updateTimeDisplay = () => {
