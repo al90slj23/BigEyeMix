@@ -252,12 +252,11 @@ function initWaveform(track) {
         refreshIcons();
     };
     
-    // 获取容器元素（频谱图和时间轴在麻瓜模式下不使用）
-    
+    // 创建 WaveSurfer 实例
     const wavesurfer = WaveSurfer.create({
         container: waveformEl,
         waveColor: track.color.light,
-        progressColor: track.color.light,  // 与 waveColor 相同，禁用进度颜色（用标尺代替）
+        progressColor: track.color.light,
         cursorColor: 'transparent',
         height: 60,
         barWidth: 2,
@@ -265,12 +264,14 @@ function initWaveform(track) {
         barRadius: 2,
         normalize: true,
         interact: false,
-        fillParent: true,   // 初始填满容器
+        fillParent: true,
         minPxPerSec: 1
     });
     
-    wavesurfer.load(API_BASE + `/api/audio/${track.uploaded.file_id}`);
     track.wavesurfer = wavesurfer;
+    
+    // 尝试使用预计算波形数据加速加载
+    loadWaveformWithCache(wavesurfer, track.uploaded.file_id, loadingEl);
     
     const timeDisplay = playBtn.parentElement.querySelector('.time-display');
     

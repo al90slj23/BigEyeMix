@@ -6,6 +6,7 @@
 let previewDebounceTimer = null;
 let previewSegments = [];
 let previewTotalDuration = 0;
+let isPreviewLoading = false;  // 防止重复加载
 
 function updatePreviewWaveform() {
     if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
@@ -13,8 +14,14 @@ function updatePreviewWaveform() {
 }
 
 async function doUpdatePreview() {
+    // 防止重复加载
+    if (isPreviewLoading) {
+        console.log('[Preview] Already loading, skip');
+        return;
+    }
+    
     const previewSection = document.getElementById('previewSection');
-    const previewLoading = document.getElementById('previewLoading');
+    const previewLoadingEl = document.getElementById('previewLoading');
     const previewWaveformEl = document.getElementById('previewWaveform');
     const previewSegmentsEl = document.getElementById('previewSegments');
     const previewPlayBtn = document.getElementById('previewPlayBtn');
@@ -24,19 +31,26 @@ async function doUpdatePreview() {
         return;
     }
     
+    isPreviewLoading = true;
+    
     previewSection.style.display = 'block';
-    previewLoading.style.display = 'flex';
+    previewLoadingEl.style.display = 'flex';
     previewWaveformEl.style.display = 'none';
     if (previewSegmentsEl) previewSegmentsEl.style.display = 'none';
     previewPlayBtn.disabled = true;
     
-    if (state.previewWavesurfer) {
-        state.previewWavesurfer.destroy();
-        state.previewWavesurfer = null;
-    }
-    if (state.previewNavigatorWavesurfer) {
-        state.previewNavigatorWavesurfer.destroy();
-        state.previewNavigatorWavesurfer = null;
+    // 安全销毁旧的 wavesurfer
+    try {
+        if (state.previewWavesurfer) {
+            state.previewWavesurfer.destroy();
+            state.previewWavesurfer = null;
+        }
+        if (state.previewNavigatorWavesurfer) {
+            state.previewNavigatorWavesurfer.destroy();
+            state.previewNavigatorWavesurfer = null;
+        }
+    } catch (e) {
+        console.log('[Preview] Error destroying wavesurfer:', e);
     }
     
     const segments = [];
@@ -89,6 +103,7 @@ async function doUpdatePreview() {
     previewTotalDuration = currentTime;
     
     if (segments.length === 0) {
+        isPreviewLoading = false;
         hidePreview();
         return;
     }
@@ -104,6 +119,7 @@ async function doUpdatePreview() {
         
     } catch (error) {
         console.log('Preview generation failed:', error);
+        isPreviewLoading = false;
         hidePreview();
     }
 }
@@ -392,6 +408,7 @@ function initPreviewWavesurfer(previewUrl) {
 
     // wavesurfer ready
     wavesurfer.on('ready', () => {
+        isPreviewLoading = false;  // 重置加载标志
         previewLoading.style.display = 'none';
         previewWaveformEl.style.display = 'block';
         previewPlayBtn.disabled = false;
@@ -417,7 +434,9 @@ function initPreviewWavesurfer(previewUrl) {
         }, 100);
     });
     
-    wavesurfer.on('error', () => {
+    wavesurfer.on('error', (err) => {
+        isPreviewLoading = false;  // 重置加载标志
+        console.log('[Preview] Wavesurfer error:', err);
         previewLoading.innerHTML = '<div class="waveform-error">预览加载失败</div>';
     });
     
@@ -510,17 +529,24 @@ function updateAllProgress(currentTime) {
 }
 
 function hidePreview() {
+    isPreviewLoading = false;  // 重置加载标志
+    
     const previewSection = document.getElementById('previewSection');
     if (previewSection) previewSection.style.display = 'none';
     
-    if (state.previewWavesurfer) {
-        state.previewWavesurfer.destroy();
-        state.previewWavesurfer = null;
+    try {
+        if (state.previewWavesurfer) {
+            state.previewWavesurfer.destroy();
+            state.previewWavesurfer = null;
+        }
+        if (state.previewNavigatorWavesurfer) {
+            state.previewNavigatorWavesurfer.destroy();
+            state.previewNavigatorWavesurfer = null;
+        }
+    } catch (e) {
+        console.log('[Preview] Error in hidePreview:', e);
     }
-    if (state.previewNavigatorWavesurfer) {
-        state.previewNavigatorWavesurfer.destroy();
-        state.previewNavigatorWavesurfer = null;
-    }
+    
     previewSegments = [];
     previewTotalDuration = 0;
     

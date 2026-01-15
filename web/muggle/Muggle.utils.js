@@ -99,3 +99,41 @@ function parseTime(str) {
 function refreshIcons() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+
+/**
+ * 使用预计算波形数据加速加载
+ * 先尝试获取缓存的波形数据快速渲染，同时后台加载音频
+ * 
+ * @param {WaveSurfer} wavesurfer WaveSurfer 实例
+ * @param {string} fileId 文件 ID
+ * @param {HTMLElement} loadingEl 加载提示元素
+ */
+async function loadWaveformWithCache(wavesurfer, fileId, loadingEl) {
+    try {
+        // 1. 先尝试获取预计算的波形数据
+        const waveformRes = await axios.get(API_BASE + `/api/uploads/${fileId}/waveform`);
+        
+        if (waveformRes.data.success && waveformRes.data.waveform) {
+            // 使用预计算的波形数据快速渲染
+            const peaks = waveformRes.data.waveform;
+            const duration = waveformRes.data.duration;
+            
+            // 更新加载提示
+            if (loadingEl) {
+                loadingEl.querySelector('.waveform-loading-text').textContent = '加载音频中...';
+            }
+            
+            // 使用预计算波形 + 加载音频
+            wavesurfer.load(API_BASE + `/api/audio/${fileId}`, [peaks], duration);
+            
+            console.log(`[Waveform] Loaded with cached peaks for ${fileId}`);
+        } else {
+            // 没有缓存，直接加载
+            wavesurfer.load(API_BASE + `/api/audio/${fileId}`);
+        }
+    } catch (error) {
+        console.log(`[Waveform] Cache not available, loading directly: ${error.message}`);
+        // 缓存获取失败，直接加载音频
+        wavesurfer.load(API_BASE + `/api/audio/${fileId}`);
+    }
+}

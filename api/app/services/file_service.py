@@ -1,18 +1,25 @@
 import os
 import uuid
 import hashlib
+import json
 import aiofiles
 from fastapi import UploadFile
+from pydub import AudioSegment
 from app.core.config import settings
 import librosa
+import numpy as np
 from datetime import datetime
 
 class FileService:
     MAX_HISTORY_FILES = 10
+    WAVEFORM_SAMPLES = 800  # 波形采样点数
     
     def __init__(self):
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
         os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
+        # 缓存目录
+        self.cache_dir = os.path.join(settings.OUTPUT_DIR, 'cache')
+        os.makedirs(self.cache_dir, exist_ok=True)
         # MD5 index file
         self.md5_index_path = os.path.join(settings.UPLOAD_DIR, '.md5_index')
         self.md5_index = self._load_md5_index()
@@ -97,10 +104,102 @@ class FileService:
         self.md5_index[file_md5] = new_file_id
         self._save_md5_index()
         
+        # 预处理：转换为 MP3 + 生成波形数据
+        await self._preprocess_audio(new_file_path)
+        
         # Cleanup old files
         await self.cleanup_old_files()
         
         return new_file_path
+    
+    async def _preprocess_audio(self, file_path: str):
+        """预处理音频：转换为 MP3 缓存 + 生成波形数据"""
+        try:
+            file_id = os.path.basename(file_path)
+            ext = file_id.split('.')[-1].lower()
+            
+            # 生成缓存 key
+            file_stat = os.stat(file_path)
+            cache_key = hashlib.md5(f"{file_path}_{file_stat.st_mtime}".encode()).hexdigest()
+            
+            # 1. 非 MP3 格式转换为 MP3
+            if ext not in ['mp3']:
+                mp3_cache_path = os.path.join(self.cache_dir, f"{cache_key}.mp3")
+                if not os.path.exists(mp3_cache_path):
+                    audio = AudioSegment.from_file(file_path)
+                    audio.export(mp3_cache_path, format="mp3", bitrate="192k")
+            
+            # 2. 生成波形数据
+            waveform_path = os.path.join(self.cache_dir, f"{cache_key}.waveform.json")
+            if not os.path.exists(waveform_path):
+                await self._generate_waveform(file_path, waveform_path)
+                
+        except Exception as e:
+            print(f"Preprocess audio failed: {e}")
+    
+    async def _generate_waveform(self, file_path: str, output_path: str):
+        """生成波形数据 JSON"""
+        try:
+            # 加载音频
+            y, sr = librosa.load(file_path, sr=22050, mono=True)
+            duration = librosa.get_duration(y=y, sr=sr)
+            
+            # 计算每个采样点对应的样本数
+            samples_per_point = len(y) // self.WAVEFORM_SAMPLES
+            
+            if samples_per_point < 1:
+                samples_per_point = 1
+            
+            # 生成波形数据（取每段的最大绝对值）
+            waveform = []
+            for i in range(self.WAVEFORM_SAMPLES):
+                start = i * samples_per_point
+                end = min(start + samples_per_point, len(y))
+                if start < len(y):
+                    segment = y[start:end]
+                    # 归一化到 0-1
+                    peak = float(np.max(np.abs(segment)))
+                    waveform.append(round(peak, 4))
+                else:
+                    waveform.append(0)
+            
+            # 保存为 JSON
+            data = {
+                "duration": round(duration, 2),
+                "sample_rate": sr,
+                "samples": self.WAVEFORM_SAMPLES,
+                "waveform": waveform
+            }
+            
+            with open(output_path, 'w') as f:
+                json.dump(data, f)
+                
+        except Exception as e:
+            print(f"Generate waveform failed: {e}")
+    
+    def get_waveform_path(self, file_path: str) -> str | None:
+        """获取波形数据文件路径"""
+        try:
+            file_stat = os.stat(file_path)
+            cache_key = hashlib.md5(f"{file_path}_{file_stat.st_mtime}".encode()).hexdigest()
+            waveform_path = os.path.join(self.cache_dir, f"{cache_key}.waveform.json")
+            if os.path.exists(waveform_path):
+                return waveform_path
+        except:
+            pass
+        return None
+    
+    def get_mp3_cache_path(self, file_path: str) -> str | None:
+        """获取 MP3 缓存文件路径"""
+        try:
+            file_stat = os.stat(file_path)
+            cache_key = hashlib.md5(f"{file_path}_{file_stat.st_mtime}".encode()).hexdigest()
+            mp3_path = os.path.join(self.cache_dir, f"{cache_key}.mp3")
+            if os.path.exists(mp3_path):
+                return mp3_path
+        except:
+            pass
+        return None
     
     async def cleanup_old_files(self):
         """Keep only the most recent MAX_HISTORY_FILES files"""
