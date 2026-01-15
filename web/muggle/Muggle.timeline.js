@@ -43,6 +43,10 @@ function renderTimeline() {
         hidePreview();
     } else {
         placeholder.style.display = 'none';
+        
+        // 检查并更新不完整的过渡块
+        updateIncompleteTransitions();
+        
         container.innerHTML = state.timeline.map((item, index) => {
             if (item.type === 'clip') {
                 const track = state.tracks.find(t => t.id === item.trackId);
@@ -55,7 +59,22 @@ function renderTimeline() {
             } else if (item.type === 'transition') {
                 const transType = item.transitionType || 'magicfill';
                 const transInfo = transitionTypes[transType] || transitionTypes.magicfill;
-                const magicState = item.magicState || (transType === 'magicfill' ? 'magic-loading' : '');
+                
+                // 确定处理状态
+                let magicState = item.magicState || '';
+                
+                // 对于 crossfade 和 beatsync，如果没有完整的 transitionData，标记为 processing
+                if ((transType === 'crossfade' || transType === 'beatsync') && !magicState) {
+                    if (!item.transitionData || !item.transitionData.nextFileId) {
+                        magicState = 'processing';  // 等待后续片段
+                    }
+                }
+                
+                // 对于 magicfill，如果没有状态，默认为 loading
+                if (transType === 'magicfill' && !magicState) {
+                    magicState = 'magic-loading';
+                }
+                
                 return `
                     <div class="timeline-item transition-item transition-${transType} ${magicState}" data-index="${index}" data-transition-id="${item.transitionId || ''}" style="border-left: 3px solid ${transInfo.color}">
                         <span class="item-label"><i data-lucide="${transInfo.icon}"></i> ${item.duration}s</span>
@@ -72,6 +91,46 @@ function renderTimeline() {
     updateTotalDuration();
     updateNextButton();
     initDragAndDrop();
+}
+
+// 检查并更新不完整的过渡块（当新片段添加到过渡块后面时）
+function updateIncompleteTransitions() {
+    for (let i = 0; i < state.timeline.length - 1; i++) {
+        const item = state.timeline[i];
+        const nextItem = state.timeline[i + 1];
+        
+        // 如果当前是过渡块，下一个是片段，且过渡块缺少 nextFileId
+        if (item.type === 'transition' && nextItem.type === 'clip' &&
+            (item.transitionType === 'crossfade' || item.transitionType === 'beatsync')) {
+            
+            if (!item.transitionData || !item.transitionData.nextFileId) {
+                const halfDuration = item.duration / 2;
+                const nextTrack = state.tracks.find(t => t.id === nextItem.trackId);
+                
+                if (nextTrack) {
+                    const nextClip = nextTrack.clips.find(c => c.id === nextItem.clipId);
+                    
+                    if (nextClip) {
+                        // 更新过渡数据
+                        if (!item.transitionData) {
+                            item.transitionData = {};
+                        }
+                        
+                        item.transitionData.nextTrackId = nextItem.trackId;
+                        item.transitionData.nextClipId = nextItem.clipId;
+                        item.transitionData.nextFileId = nextTrack.uploaded.file_id;
+                        item.transitionData.nextFadeStart = nextClip.start;
+                        item.transitionData.nextFadeEnd = nextClip.start + halfDuration;
+                        
+                        // 清除 processing 状态
+                        delete item.magicState;
+                        
+                        console.log(`[Transition] Updated ${item.transitionType} with next clip:`, item.transitionData);
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ==================== 其他功能 ====================
@@ -96,7 +155,17 @@ function updateTotalDuration() {
                 if (clip) total += clip.end - clip.start;
             }
         } else if (item.type === 'transition') {
-            total += item.duration;
+            const transType = item.transitionType || 'magicfill';
+            if (transType === 'magicfill' || transType === 'silence') {
+                // 魔法填充和静音：增加时长
+                total += item.duration;
+            } else if (transType === 'crossfade' || transType === 'beatsync') {
+                // 淡入淡出和节拍对齐：减少时长（因为是重叠的）
+                // 只有当有完整的前后片段信息时才减少
+                if (item.transitionData && item.transitionData.nextFileId) {
+                    total -= item.duration;
+                }
+            }
         }
     });
     

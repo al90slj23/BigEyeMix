@@ -101,10 +101,12 @@ class PreviewPlayer {
         let scheduleTime = this.audioContext.currentTime;
         let accumulatedTime = 0;
         
-        console.log(`[Player] Starting playback from ${fromTime}s`);
+        console.log(`[Player] Starting playback from ${fromTime}s, total duration: ${this.totalDuration}s`);
         
         // 遍历所有片段，按顺序调度播放
-        for (const seg of this.segments) {
+        for (let i = 0; i < this.segments.length; i++) {
+            const seg = this.segments[i];
+            
             // 跳过已经播放过的片段
             if (accumulatedTime + seg.duration < fromTime) {
                 accumulatedTime += seg.duration;
@@ -128,15 +130,81 @@ class PreviewPlayer {
                     scheduleTime += duration;
                     accumulatedTime += seg.duration;
                     
-                    console.log(`[Player] Scheduled ${seg.file_id} at ${scheduleTime - duration}s, duration ${duration}s`);
+                    console.log(`[Player] Scheduled clip ${seg.file_id} at ${scheduleTime - duration}s, duration ${duration}s`);
                 }
             } else if (seg.type === 'transition') {
-                // 过渡块：静音或魔法填充
-                if (seg.transition_type === 'silence') {
+                const transType = seg.transition_type;
+                
+                // 过渡块处理
+                if (transType === 'crossfade' || transType === 'beatsync') {
+                    // 淡入淡出和节拍对齐：播放前后段的重叠部分
+                    // 关键：这些过渡减少总时长，因为后段会提前开始
+                    if (seg.transition_data && seg.transition_data.prevFileId && seg.transition_data.nextFileId) {
+                        const data = seg.transition_data;
+                        const overlapDuration = seg.duration;
+                        
+                        // 回退 scheduleTime，让后段提前开始（与前段重叠）
+                        scheduleTime -= overlapDuration;
+                        
+                        // 播放前段的淡出部分（最后 overlapDuration 秒）
+                        const prevBuffer = await this.loadAudioBuffer(
+                            data.prevFileId, 
+                            data.prevFadeStart, 
+                            data.prevFadeEnd
+                        );
+                        
+                        // 播放后段的淡入部分（前 overlapDuration 秒）
+                        const nextBuffer = await this.loadAudioBuffer(
+                            data.nextFileId, 
+                            data.nextFadeStart, 
+                            data.nextFadeEnd
+                        );
+                        
+                        if (prevBuffer && nextBuffer) {
+                            // 创建淡出效果
+                            const prevSource = this.audioContext.createBufferSource();
+                            prevSource.buffer = prevBuffer;
+                            const prevGain = this.audioContext.createGain();
+                            prevSource.connect(prevGain);
+                            prevGain.connect(this.audioContext.destination);
+                            
+                            // 淡出：从 1 到 0
+                            prevGain.gain.setValueAtTime(1, scheduleTime);
+                            prevGain.gain.linearRampToValueAtTime(0, scheduleTime + overlapDuration);
+                            
+                            // 创建淡入效果
+                            const nextSource = this.audioContext.createBufferSource();
+                            nextSource.buffer = nextBuffer;
+                            const nextGain = this.audioContext.createGain();
+                            nextSource.connect(nextGain);
+                            nextGain.connect(this.audioContext.destination);
+                            
+                            // 淡入：从 0 到 1
+                            nextGain.gain.setValueAtTime(0, scheduleTime);
+                            nextGain.gain.linearRampToValueAtTime(1, scheduleTime + overlapDuration);
+                            
+                            // 同时开始播放
+                            prevSource.start(scheduleTime);
+                            nextSource.start(scheduleTime);
+                            
+                            this.currentSources.push(prevSource, nextSource);
+                            
+                            console.log(`[Player] Scheduled ${transType} overlap at ${scheduleTime}s, duration ${overlapDuration}s (reduces total time)`);
+                        }
+                        
+                        // scheduleTime 已经回退了，所以实际上减少了总时长
+                        // accumulatedTime 也要减少
+                        accumulatedTime -= overlapDuration;
+                    } else {
+                        // 没有完整数据，静音处理（不应该发生）
+                        console.warn(`[Player] Incomplete ${transType} data, skipping`);
+                    }
+                } else if (transType === 'silence') {
                     // 静音：不播放，只增加时间
                     scheduleTime += seg.duration;
                     accumulatedTime += seg.duration;
-                } else if (seg.transition_type === 'magicfill' && seg.magic_output_id) {
+                    console.log(`[Player] Silence ${seg.duration}s`);
+                } else if (transType === 'magicfill' && seg.magic_output_id) {
                     // 魔法填充：播放生成的音频
                     const buffer = await this.loadAudioBuffer(seg.magic_output_id, 0, seg.duration);
                     if (buffer) {

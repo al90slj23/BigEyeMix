@@ -287,13 +287,16 @@ async function doUpdatePreview() {
             const transType = item.transitionType || 'magicfill';
             const duration = item.duration;
             
-            // 对于淡入淡出和节拍对齐，不是插入新段，而是处理前后段的重叠
-            if ((transType === 'crossfade' || transType === 'beatsync') && item.transitionData) {
-                const data = item.transitionData;
-                const halfDuration = duration / 2;
-                
-                // 如果有完整的前后信息
-                if (data.prevFileId && data.nextFileId) {
+            // 对于淡入淡出和节拍对齐，这是重叠处理，减少总时长
+            if (transType === 'crossfade' || transType === 'beatsync') {
+                // 检查是否有完整的前后信息
+                if (item.transitionData && item.transitionData.prevFileId && item.transitionData.nextFileId) {
+                    const data = item.transitionData;
+                    
+                    // 过渡块的显示位置：从前段末尾回退 duration 开始
+                    const transitionStart = currentTime - duration;
+                    const transitionEnd = currentTime;
+                    
                     segments.push({
                         type: 'transition',
                         transition_type: transType,
@@ -303,22 +306,24 @@ async function doUpdatePreview() {
                     
                     previewSegments.push({
                         index: index,
-                        start: currentTime,
-                        end: currentTime + duration,
+                        start: transitionStart,
+                        end: transitionEnd,
                         color: transType === 'crossfade' ? '#f59e0b' : '#ec4899',
                         label: duration + 's',
                         type: 'transition',
                         transitionType: transType
                     });
-                    currentTime += duration;
-                    totalDuration += duration;
+                    
+                    // 减少总时长（因为是重叠的）
+                    currentTime -= duration;
+                    totalDuration -= duration;
                 } else {
-                    // 只有前段信息，等待后段
+                    // 没有完整信息，标记为处理中，暂时不减少时长
                     segments.push({
                         type: 'transition',
                         transition_type: transType,
                         duration: duration,
-                        transition_data: data
+                        transition_data: item.transitionData || {}
                     });
                     
                     previewSegments.push({
@@ -328,13 +333,14 @@ async function doUpdatePreview() {
                         color: '#e0e0e0',
                         label: duration + 's',
                         type: 'transition',
-                        transitionType: transType
+                        transitionType: transType,
+                        magicState: 'processing'
                     });
-                    currentTime += duration;
-                    totalDuration += duration;
+                    
+                    // 暂时不改变时长（等完整信息后会重新计算）
                 }
             } else {
-                // 魔法填充和静音
+                // 魔法填充和静音：增加时长
                 segments.push({
                     type: 'transition',
                     transition_type: transType,
