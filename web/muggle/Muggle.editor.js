@@ -79,71 +79,116 @@ function renderEditorAndTimeline() {
         </div>
         
         <div class="timeline-section">
-            <div class="timeline-title">
-                <i data-lucide="layers"></i> 拼接
-                <span class="timeline-hint">拖拽片段到下方排列</span>
+            <div class="timeline-tabs">
+                <div class="timeline-tab active" data-tab="muggle">
+                    <i data-lucide="sparkles"></i> 麻瓜拼接
+                </div>
+                <div class="timeline-tab" data-tab="manual">
+                    <i data-lucide="settings"></i> 手动拼接
+                </div>
             </div>
             
-            <div class="available-blocks">
+            <!-- 麻瓜拼接标签页 -->
+            <div class="timeline-tab-content active" data-tab="muggle">
+                <div class="muggle-splice-section">
+                    <div class="muggle-input-area">
+                        <div class="muggle-input-label">
+                            <i data-lucide="message-circle"></i>
+                            描述你想要的拼接效果
+                        </div>
+                        <textarea 
+                            id="muggleSpliceInput" 
+                            class="muggle-input" 
+                            placeholder="例如：我要第一个文件的前30秒，然后用淡化过渡连接第二个文件的中间部分，最后加上第一个文件的结尾..."
+                            rows="4"></textarea>
+                        <button class="muggle-generate-btn" id="muggleGenerateBtn">
+                            <i data-lucide="sparkles"></i> 生成拼接方案
+                        </button>
+                    </div>
+                    <div class="muggle-result-area" id="muggleResultArea" style="display:none;">
+                        <div class="muggle-result-header">
+                            <i data-lucide="check-circle"></i>
+                            AI 理解的拼接方案
+                        </div>
+                        <div class="muggle-result-content" id="muggleResultContent"></div>
+                        <div class="muggle-result-actions">
+                            <button class="btn-apply" id="muggleApplyBtn">
+                                <i data-lucide="play"></i> 应用方案
+                            </button>
+                            <button class="btn-regenerate" id="muggleRegenerateBtn">
+                                <i data-lucide="refresh-cw"></i> 重新生成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 手动拼接标签页 -->
+            <div class="timeline-tab-content" data-tab="manual">
+                <div class="available-blocks">
+                    <div class="blocks-row">
+                        <div class="blocks-label">片段</div>
+                        <div class="blocks-list" id="clipBlocks"></div>
+                    </div>
+                    <div class="blocks-row">
+                        <div class="blocks-label">处理</div>
+                        <div class="blocks-list" id="transitionBlocks">
+                            <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="crossfade">
+                                <i data-lucide="git-merge"></i> 3s
+                            </div>
+                            <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="beatsync">
+                                <i data-lucide="activity"></i> 3s
+                            </div>
+                            <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="magicfill">
+                                <i data-lucide="sparkles"></i> 3s
+                            </div>
+                            <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="silence">
+                                <i data-lucide="volume-x"></i> 3s
+                            </div>
+                            <div class="block transition-add-btn" onclick="showCustomTransitionModal()">
+                                <i data-lucide="plus"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="blocks-row">
-                    <div class="blocks-label">片段</div>
-                    <div class="blocks-list" id="clipBlocks"></div>
-                </div>
-                <div class="blocks-row">
-                    <div class="blocks-label">处理</div>
-                    <div class="blocks-list" id="transitionBlocks">
-                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="crossfade">
-                            <i data-lucide="git-merge"></i> 3s
+                    <div class="blocks-label">拼接</div>
+                    <div class="timeline-drop" id="timelineDrop" style="flex: 1;">
+                        <div class="timeline-placeholder" id="timelinePlaceholder">
+                            <i data-lucide="arrow-down"></i> 拖拽片段到这里
                         </div>
-                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="beatsync">
-                            <i data-lucide="activity"></i> 3s
-                        </div>
-                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="magicfill">
-                            <i data-lucide="sparkles"></i> 3s
-                        </div>
-                        <div class="block transition-block" draggable="true" data-type="transition" data-duration="3" data-transition-type="silence">
-                            <i data-lucide="volume-x"></i> 3s
-                        </div>
-                        <div class="block transition-add-btn" onclick="showCustomTransitionModal()">
-                            <i data-lucide="plus"></i>
+                        <div class="timeline-items" id="timelineItems"></div>
+                        <div class="timeline-trash" id="timelineTrash">
+                            <i data-lucide="trash-2"></i>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="blocks-row">
-                <div class="blocks-label">拼接</div>
-                <div class="timeline-drop" id="timelineDrop" style="flex: 1;">
-                    <div class="timeline-placeholder" id="timelinePlaceholder">
-                        <i data-lucide="arrow-down"></i> 拖拽片段到这里
-                    </div>
-                    <div class="timeline-items" id="timelineItems"></div>
-                    <div class="timeline-trash" id="timelineTrash">
-                        <i data-lucide="trash-2"></i>
+                
+                <div class="timeline-actions">
+                    <button class="btn-clear" onclick="confirmClearTimeline()">
+                        <i data-lucide="trash-2"></i> 清空
+                    </button>
+                    <div class="timeline-total">
+                        总时长: <span id="totalDuration">0:00</span>
                     </div>
                 </div>
-            </div>
-            
-            <div class="timeline-actions">
-                <button class="btn-clear" onclick="confirmClearTimeline()">
-                    <i data-lucide="trash-2"></i> 清空
-                </button>
-                <div class="timeline-total">
-                    总时长: <span id="totalDuration">0:00</span>
+                
+                <!-- 魔法填充状态日志 -->
+                <div class="magic-status-box" id="magicStatusBox" style="display:none;">
+                    <div class="magic-status-header">
+                        <i data-lucide="sparkles"></i>
+                        <span>魔法填充</span>
+                        <span class="magic-status-badge" id="magicStatusBadge">等待中</span>
+                    </div>
+                    <div class="magic-status-logs" id="magicStatusLogs"></div>
                 </div>
             </div>
-            
-            <!-- 魔法填充状态日志 -->
-            <div class="magic-status-box" id="magicStatusBox" style="display:none;">
-                <div class="magic-status-header">
-                    <i data-lucide="sparkles"></i>
-                    <span>魔法填充</span>
-                    <span class="magic-status-badge" id="magicStatusBadge">等待中</span>
-                </div>
-                <div class="magic-status-logs" id="magicStatusLogs"></div>
-            </div>
-            
-            <div class="preview-section" id="previewSection" style="display:none;">
+        </div>
+        
+        <!-- 独立的预览区域 -->
+        <div class="preview-section-wrapper" id="previewSectionWrapper" style="display:none;">
+            <div class="preview-section" id="previewSection">
                 <div class="preview-header">
                     <div class="preview-title">
                         <i data-lucide="eye"></i> 预览
@@ -209,6 +254,11 @@ function renderEditorAndTimeline() {
     renderClipBlocks();
     renderTimeline();
     initDragAndDrop();
+    
+    // 初始化麻瓜拼接功能
+    if (typeof initMuggleSpliceFeatures === 'function') {
+        initMuggleSpliceFeatures();
+    }
 }
 
 function renderClips(track) {

@@ -228,7 +228,9 @@ async function doUpdatePreview() {
     
     isPreviewLoading = true;
     
-    previewSection.style.display = 'block';
+    const previewSectionWrapper = document.getElementById('previewSectionWrapper');
+    if (previewSectionWrapper) previewSectionWrapper.style.display = 'block';
+    
     previewLoadingEl.style.display = 'flex';
     previewWaveformEl.style.display = 'none';
     if (previewSegmentsEl) previewSegmentsEl.style.display = 'none';
@@ -885,8 +887,8 @@ function updateAllProgress(currentTime) {
 function hidePreview() {
     isPreviewLoading = false;  // 重置加载标志
     
-    const previewSection = document.getElementById('previewSection');
-    if (previewSection) previewSection.style.display = 'none';
+    const previewSectionWrapper = document.getElementById('previewSectionWrapper');
+    if (previewSectionWrapper) previewSectionWrapper.style.display = 'none';
     
     try {
         if (state.previewWavesurfer) {

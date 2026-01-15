@@ -11,6 +11,202 @@
     padding: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
+
+/* ==================== Timeline Tabs ==================== */
+.timeline-tabs {
+    display: flex;
+    margin-bottom: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+.timeline-tab {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    background: transparent;
+}
+.timeline-tab i { width: 16px; height: 16px; }
+.timeline-tab:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+.timeline-tab.active {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* ==================== Timeline Tab Content ==================== */
+.timeline-tab-content {
+    display: none;
+}
+.timeline-tab-content.active {
+    display: block;
+}
+
+/* ==================== Muggle Splice Section ==================== */
+.muggle-splice-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.muggle-input-area {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(102, 126, 234, 0.05));
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+}
+.muggle-input-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #8b5cf6;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.muggle-input-label i { width: 16px; height: 16px; }
+.muggle-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+.muggle-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+.muggle-input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+.muggle-generate-btn {
+    margin-top: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #8b5cf6, #667eea);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    align-self: flex-start;
+}
+.muggle-generate-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+.muggle-generate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.muggle-generate-btn i { width: 16px; height: 16px; }
+
+/* ==================== Muggle Result Area ==================== */
+.muggle-result-area {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+}
+.muggle-result-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: #22c55e;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.muggle-result-header i { width: 16px; height: 16px; }
+.muggle-result-content {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 12px;
+    white-space: pre-wrap;
+}
+.muggle-result-actions {
+    display: flex;
+    gap: 8px;
+}
+.btn-apply {
+    padding: 10px 16px;
+    background: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.btn-apply:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+}
+.btn-apply i { width: 14px; height: 14px; }
+.btn-regenerate {
+    padding: 10px 16px;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.btn-regenerate:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+.btn-regenerate i { width: 14px; height: 14px; }
+
+/* ==================== Preview Section Wrapper ==================== */
+.preview-section-wrapper {
+    margin-top: 16px;
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 2px solid #667eea;
+}
+
 .timeline-title {
     font-size: 15px;
     font-weight: 600;
