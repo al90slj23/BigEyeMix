@@ -44,9 +44,9 @@ async function stitchWaveformData(segments) {
             try {
                 const response = await axios.get(API_BASE + `/api/uploads/${seg.file_id}/waveform`);
                 if (response.data.success && response.data.waveform) {
-                    const fullWaveform = response.data.waveform;
+                    const fullWaveform = response.data.waveform;  // 这是数组
                     const fullDuration = response.data.duration;
-                    const fullPeaks = fullWaveform.waveform || fullWaveform.peaks || [];
+                    const fullPeaks = fullWaveform;  // 直接使用 waveform 数组
                     
                     // 计算片段在完整波形中的采样点范围
                     const startRatio = seg.start / fullDuration;
@@ -80,7 +80,7 @@ async function stitchWaveformData(segments) {
                 try {
                     const response = await axios.get(API_BASE + `/api/uploads/${seg.magic_output_id}/waveform`);
                     if (response.data.success && response.data.waveform) {
-                        const magicPeaks = response.data.waveform.waveform || response.data.waveform.peaks || [];
+                        const magicPeaks = response.data.waveform;  // 直接使用 waveform 数组
                         stitchedPeaks.push(...magicPeaks);
                         totalSamples += magicPeaks.length;
                         console.log(`[Preview] Added magic fill waveform: ${magicPeaks.length} peaks`);
@@ -106,6 +106,12 @@ async function stitchWaveformData(segments) {
     }
     
     console.log(`[Preview] Stitched waveform: ${totalSamples} total samples`);
+    
+    // 如果没有采样点，使用占位数据
+    if (stitchedPeaks.length === 0) {
+        console.log('[Preview] No peaks found, using placeholder');
+        stitchedPeaks = new Array(800).fill(0.5);
+    }
     
     return {
         peaks: stitchedPeaks,
