@@ -343,7 +343,7 @@
 }
 .preview-segments {
     position: absolute;
-    top: 0;
+    top: -16px;
     left: 0;
     right: 0;
     height: 12px;
