@@ -374,7 +374,11 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
         const duration = wavesurfer.getDuration();
         const seekTime = duration * progress;
         
-        wavesurfer.setTime(seekTime);
+        // 使用播放器 seek
+        if (window.previewPlayer) {
+            window.previewPlayer.seek(seekTime);
+        }
+        
         updateRulerPosition(progress);
         timeDisplay.textContent = formatTime(seekTime);
         updateSeekTime(seekTime);
@@ -563,6 +567,30 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
         
         initTimelineProgress();
         
+        // 初始化 Web Audio API 播放器
+        if (!window.previewPlayer) {
+            window.previewPlayer = new PreviewPlayer();
+        }
+        window.previewPlayer.setSegments(segments, previewTotalDuration);
+        
+        // 设置播放器回调
+        window.previewPlayer.onProgressUpdate = (currentTime) => {
+            timeDisplay.textContent = formatTime(currentTime);
+            updateAllProgress(currentTime);
+            const progress = currentTime / previewTotalDuration;
+            updateRulerPosition(progress, true);
+            
+            if (navigatorWavesurfer && navigatorWavesurfer.getDuration() > 0) {
+                navigatorWavesurfer.setTime(currentTime);
+            }
+        };
+        
+        window.previewPlayer.onPlayStateChange = (playing) => {
+            isPlaying = playing;
+            previewPlayBtn.innerHTML = playing ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
+            refreshIcons();
+        };
+        
         // 延迟初始化标尺和视口，等待 zoom 完成
         setTimeout(() => {
             updateRulerPosition(0);
@@ -578,35 +606,14 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
         previewLoading.innerHTML = '<div class="waveform-error">预览加载失败</div>';
     });
     
-    // 播放控制
-    const updateProgress = () => {
-        const currentTime = wavesurfer.getCurrentTime();
-        timeDisplay.textContent = formatTime(currentTime);
-        updateAllProgress(currentTime);
-        const duration = wavesurfer.getDuration();
-        if (duration > 0) updateRulerPosition(currentTime / duration, true);
+    // 播放控制 - 使用 Web Audio API 播放器
+    previewPlayBtn.onclick = () => { 
+        if (window.previewPlayer) {
+            window.previewPlayer.togglePlayPause();
+        }
     };
     
-    wavesurfer.on('audioprocess', updateProgress);
-    wavesurfer.on('seeking', () => {
-        updateProgress();
-        updateSeekTime(wavesurfer.getCurrentTime());
-    });
-    
-    previewPlayBtn.onclick = () => { wavesurfer.playPause(); };
-    wavesurfer.on('play', () => { 
-        isPlaying = true;
-        previewPlayBtn.innerHTML = '<i data-lucide="pause"></i>'; 
-        refreshIcons(); 
-    });
-    wavesurfer.on('pause', () => { 
-        isPlaying = false;
-        previewPlayBtn.innerHTML = '<i data-lucide="play"></i>'; 
-        refreshIcons(); 
-    });
-    wavesurfer.on('finish', () => { updateAllProgress(0); });
-    
-    // 同步导航条波形进度
+    // 同步导航条波形进度（仅用于显示，不用于播放）
     if (navigatorWavesurfer) {
         wavesurfer.on('audioprocess', () => {
             const time = wavesurfer.getCurrentTime();
