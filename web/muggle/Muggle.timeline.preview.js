@@ -7,14 +7,38 @@ let previewDebounceTimer = null;
 let previewSegments = [];
 let previewTotalDuration = 0;
 let isPreviewLoading = false;  // 防止重复加载
+let currentPreviewId = null;  // 当前预览的 ID
+
+function renderPreviewSegments() {
+    const container = document.getElementById('previewSegments');
+    if (!container || previewSegments.length === 0) {
+        if (container) container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'flex';
+    container.innerHTML = previewSegments.map((seg, i) => {
+        const widthPercent = ((seg.end - seg.start) / previewTotalDuration) * 100;
+        const magicClass = seg.magicState || '';
+        return `
+            <div class="preview-seg ${magicClass}" data-seg="${i}" style="width:${widthPercent}%; background:${seg.color}">
+                <span class="preview-seg-label">${seg.label}</span>
+                <div class="preview-seg-progress"></div>
+            </div>
+        `;
+    }).join('');
+    refreshIcons();
+}
 
 function updatePreviewWaveform() {
     if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+    // 取消当前加载标志，允许新的预览请求
+    isPreviewLoading = false;
     previewDebounceTimer = setTimeout(doUpdatePreview, 500);
 }
 
 async function doUpdatePreview() {
-    // 防止重复加载
+    // 防止重复加载（但允许通过 updatePreviewWaveform 重置）
     if (isPreviewLoading) {
         console.log('[Preview] Already loading, skip');
         return;
@@ -39,19 +63,20 @@ async function doUpdatePreview() {
     if (previewSegmentsEl) previewSegmentsEl.style.display = 'none';
     previewPlayBtn.disabled = true;
     
-    // 安全销毁旧的 wavesurfer
-    try {
-        if (state.previewWavesurfer) {
-            state.previewWavesurfer.destroy();
-            state.previewWavesurfer = null;
+    // 安全销毁旧的 wavesurfer（延迟销毁避免 AbortError）
+    const oldWavesurfer = state.previewWavesurfer;
+    const oldNavigatorWavesurfer = state.previewNavigatorWavesurfer;
+    state.previewWavesurfer = null;
+    state.previewNavigatorWavesurfer = null;
+    
+    setTimeout(() => {
+        try {
+            if (oldWavesurfer) oldWavesurfer.destroy();
+            if (oldNavigatorWavesurfer) oldNavigatorWavesurfer.destroy();
+        } catch (e) {
+            console.log('[Preview] Error destroying old wavesurfer:', e);
         }
-        if (state.previewNavigatorWavesurfer) {
-            state.previewNavigatorWavesurfer.destroy();
-            state.previewNavigatorWavesurfer = null;
-        }
-    } catch (e) {
-        console.log('[Preview] Error destroying wavesurfer:', e);
-    }
+    }, 100);
     
     const segments = [];
     previewSegments = [];
@@ -114,17 +139,26 @@ async function doUpdatePreview() {
             transition_type: state.selectedScene || 'cut'
         });
         
-        const previewUrl = API_BASE + `/api/audio/${response.data.preview_id}`;
-        initPreviewWavesurfer(previewUrl);
+        const previewId = response.data.preview_id;
+        currentPreviewId = previewId;  // 记录当前预览 ID
+        const previewUrl = API_BASE + `/api/audio/${previewId}`;
+        const waveformData = response.data.waveform;  // 预计算的波形数据
+        
+        console.log(`[Preview] Generated new preview: ${previewId}`);
+        
+        // 渲染预览片段条
+        renderPreviewSegments();
+        
+        initPreviewWavesurfer(previewUrl, waveformData);
         
     } catch (error) {
-        console.log('Preview generation failed:', error);
+        console.log('[Preview] Generation failed:', error);
         isPreviewLoading = false;
         hidePreview();
     }
 }
 
-function initPreviewWavesurfer(previewUrl) {
+function initPreviewWavesurfer(previewUrl, waveformData) {
     const previewLoading = document.getElementById('previewLoading');
     const previewWaveformEl = document.getElementById('previewWaveform');
     const previewPlayBtn = document.getElementById('previewPlayBtn');
@@ -166,7 +200,14 @@ function initPreviewWavesurfer(previewUrl) {
         minPxPerSec: 1
     });
     
-    wavesurfer.load(previewUrl);
+    // 使用预计算波形数据加速加载
+    if (waveformData && waveformData.peaks && waveformData.duration) {
+        console.log('[Preview] Loading with cached waveform data');
+        wavesurfer.load(previewUrl, [waveformData.peaks], waveformData.duration);
+    } else {
+        console.log('[Preview] Loading without cache');
+        wavesurfer.load(previewUrl);
+    }
     state.previewWavesurfer = wavesurfer;
 
     // 导航条波形 - 同样使用主题色
@@ -184,7 +225,12 @@ function initPreviewWavesurfer(previewUrl) {
             normalize: true,
             interact: false
         });
-        navigatorWavesurfer.load(previewUrl);
+        // 使用预计算波形数据
+        if (waveformData && waveformData.peaks && waveformData.duration) {
+            navigatorWavesurfer.load(previewUrl, [waveformData.peaks], waveformData.duration);
+        } else {
+            navigatorWavesurfer.load(previewUrl);
+        }
         state.previewNavigatorWavesurfer = navigatorWavesurfer;
     }
     
@@ -412,6 +458,12 @@ function initPreviewWavesurfer(previewUrl) {
         previewLoading.style.display = 'none';
         previewWaveformEl.style.display = 'block';
         previewPlayBtn.disabled = false;
+        
+        // 显示片段条
+        const previewSegmentsEl = document.getElementById('previewSegments');
+        if (previewSegmentsEl && previewSegments.length > 0) {
+            previewSegmentsEl.style.display = 'flex';
+        }
         
         previewTotalDuration = wavesurfer.getDuration();
         document.getElementById('previewDuration').textContent = formatTime(previewTotalDuration);

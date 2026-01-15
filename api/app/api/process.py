@@ -52,17 +52,39 @@ async def create_multi_mix(request: MultiMixRequest):
 
 @router.post("/mix/preview")
 async def create_preview(request: MultiMixRequest):
-    """Create a preview mix (same as multi but returns preview_id)"""
+    """Create a preview mix with pre-computed waveform data"""
     try:
+        from app.services.file_service import file_service
+        import json
+        
         output_path = await audio_service.mix_multi_segments(
             segments=request.segments,
             transition_duration=request.transition_duration or 0,
             transition_type=request.transition_type or 'cut'
         )
         
+        preview_id = os.path.basename(output_path)
+        
+        # 生成预览波形数据
+        waveform_data = None
+        try:
+            await file_service._preprocess_audio(output_path)
+            waveform_path = file_service.get_waveform_path(output_path)
+            if waveform_path and os.path.exists(waveform_path):
+                with open(waveform_path, 'r') as f:
+                    raw_data = json.load(f)
+                    # 转换为前端期望的格式
+                    waveform_data = {
+                        "peaks": raw_data.get("waveform", []),
+                        "duration": raw_data.get("duration", 0)
+                    }
+        except Exception as e:
+            print(f"Failed to generate preview waveform: {e}")
+        
         return {
             "success": True,
-            "preview_id": os.path.basename(output_path),
+            "preview_id": preview_id,
+            "waveform": waveform_data,
             "message": "Preview created successfully"
         }
     except Exception as e:
