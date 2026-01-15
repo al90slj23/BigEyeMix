@@ -468,8 +468,17 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
     
     // 预加载所有音频片段
     let allAudioLoaded = false;
+    let isPreloading = false;  // 防止重复预加载
+    
     const preloadAllAudio = async () => {
+        if (isPreloading || allAudioLoaded) {
+            console.log('[Preview] Preload already in progress or completed');
+            return;
+        }
+        
+        isPreloading = true;
         console.log('[Preview] Preloading all audio segments...');
+        
         try {
             // 初始化 AudioContext
             window.previewPlayer.initAudioContext();
@@ -481,14 +490,15 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
                 }
             }
             allAudioLoaded = true;
+            isPreloading = false;
             console.log('[Preview] All audio segments preloaded successfully');
             
-            // 所有音频加载完成后才启用播放按钮
-            previewPlayBtn.disabled = false;
+            return true;
         } catch (error) {
             console.error('[Preview] Failed to preload audio:', error);
             allAudioLoaded = false;
-            previewPlayBtn.disabled = true;
+            isPreloading = false;
+            return false;
         }
     };
     
@@ -707,8 +717,23 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
 
     // wavesurfer ready
     wavesurfer.on('ready', async () => {
-        // 波形数据准备好了，但还不显示，先预加载所有音频
-        console.log('[Preview] Waveform ready, preloading audio...');
+        // 波形数据准备好了，但还不显示，先检查所有块是否都处理完
+        console.log('[Preview] Waveform ready, checking if all blocks are processed...');
+        
+        // 检查是否所有片段都已准备好（没有 loading 状态的过渡块）
+        const hasLoadingTransition = previewSegments.some(seg => 
+            seg.type === 'transition' && 
+            (seg.magicState === 'magic-loading' || seg.magicState === 'processing')
+        );
+        
+        if (hasLoadingTransition) {
+            console.log('[Preview] Some transitions are still processing, keeping loading state');
+            // 保持 loading 状态，不显示波形
+            return;
+        }
+        
+        // 所有块都处理完了，开始预加载音频
+        console.log('[Preview] All blocks processed, preloading audio...');
         
         // 初始化 Web Audio API 播放器
         if (!window.previewPlayer) {
@@ -717,29 +742,21 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
         window.previewPlayer.setSegments(segments, previewTotalDuration);
         
         // 预加载所有音频
-        await preloadAllAudio();
+        const preloadSuccess = await preloadAllAudio();
+        
+        if (!preloadSuccess) {
+            console.error('[Preview] Audio preload failed');
+            previewLoading.innerHTML = '<div class="waveform-error">音频加载失败</div>';
+            return;
+        }
         
         // 音频加载完成后才显示波形和启用播放
         isPreviewLoading = false;
         previewLoading.style.display = 'none';
         previewWaveformEl.style.display = 'block';
+        previewPlayBtn.disabled = false;
         
-        // 检查是否所有片段都已准备好（没有 loading 状态的魔法填充）
-        const hasLoadingMagic = previewSegments.some(seg => 
-            seg.type === 'transition' && 
-            seg.transitionType === 'magicfill' && 
-            seg.magicState === 'magic-loading'
-        );
-        
-        // 只有当所有片段都准备好且音频已加载时才启用播放
-        previewPlayBtn.disabled = hasLoadingMagic || !allAudioLoaded;
-        
-        if (hasLoadingMagic) {
-            console.log('[Preview] Play disabled: waiting for magic fill to complete');
-        }
-        if (!allAudioLoaded) {
-            console.log('[Preview] Play disabled: audio still loading');
-        }
+        console.log('[Preview] Preview ready to play');
         
         // 显示片段条
         const previewSegmentsEl = document.getElementById('previewSegments');

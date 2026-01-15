@@ -404,6 +404,43 @@
 .timeline-item:not(.played):not(.playing) { opacity: 0.6; }
 .timeline-item.played, .timeline-item.playing { opacity: 1; }
 
+/* ==================== 过渡块处理中状态（跑马灯边框）==================== */
+.timeline-item.transition-item.magic-loading,
+.timeline-item.transition-item.processing {
+    position: relative;
+    animation: processingPulse 2s ease-in-out infinite;
+}
+
+.timeline-item.transition-item.magic-loading::before,
+.timeline-item.transition-item.processing::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, 
+        #667eea 0%, 
+        #764ba2 25%, 
+        #667eea 50%, 
+        #764ba2 75%, 
+        #667eea 100%);
+    background-size: 200% 100%;
+    animation: marqueeBorder 2s linear infinite;
+    z-index: -1;
+}
+
+@keyframes marqueeBorder {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+@keyframes processingPulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
 /* ==================== Delete Hint & Effect ==================== */
 .delete-hint {
     position: fixed;

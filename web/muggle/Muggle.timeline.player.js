@@ -80,7 +80,11 @@ class PreviewPlayer {
     
     // 播放拼接的音频
     async play(fromTime = 0) {
-        if (this.isPlaying) return;
+        // 防止重复调用
+        if (this.isPlaying) {
+            console.log('[Player] Already playing, ignoring duplicate play() call');
+            return;
+        }
         
         this.initAudioContext();
         
@@ -96,6 +100,8 @@ class PreviewPlayer {
         
         let scheduleTime = this.audioContext.currentTime;
         let accumulatedTime = 0;
+        
+        console.log(`[Player] Starting playback from ${fromTime}s`);
         
         // 遍历所有片段，按顺序调度播放
         for (const seg of this.segments) {
