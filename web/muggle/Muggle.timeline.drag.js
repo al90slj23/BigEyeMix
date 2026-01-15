@@ -100,6 +100,42 @@ function handleDrop(e) {
     if (newItem.type === 'transition' && !newItem.transitionId) {
         newItem.transitionId = generateTransitionId();
     }
+    
+    // 处理淡入淡出和节拍对齐：需要读取前后片段信息
+    if (newItem.type === 'transition' && 
+        (newItem.transitionType === 'crossfade' || newItem.transitionType === 'beatsync')) {
+        const insertIndex = state.timeline.length;
+        const prevIndex = insertIndex - 1;
+        
+        if (prevIndex >= 0) {
+            const prevItem = state.timeline[prevIndex];
+            
+            // 只有当前一个是片段时才处理（后面的片段会在下次添加时处理）
+            if (prevItem.type === 'clip') {
+                const halfDuration = newItem.duration / 2;
+                const prevTrack = state.tracks.find(t => t.id === prevItem.trackId);
+                
+                if (prevTrack) {
+                    const prevClip = prevTrack.clips.find(c => c.id === prevItem.clipId);
+                    
+                    if (prevClip) {
+                        // 存储前段信息
+                        newItem.transitionData = {
+                            prevTrackId: prevItem.trackId,
+                            prevClipId: prevItem.clipId,
+                            prevFileId: prevTrack.uploaded.file_id,
+                            prevFadeStart: prevClip.end - halfDuration,
+                            prevFadeEnd: prevClip.end,
+                            halfDuration: halfDuration
+                        };
+                        
+                        console.log(`[Transition] ${newItem.transitionType} prepared with prev clip:`, newItem.transitionData);
+                    }
+                }
+            }
+        }
+    }
+    
     state.timeline.push(newItem);
     renderTimeline();
     
@@ -235,6 +271,40 @@ function handleTouchEnd(e) {
             if (newItem.type === 'transition' && !newItem.transitionId) {
                 newItem.transitionId = generateTransitionId();
             }
+            
+            // 处理淡入淡出和节拍对齐
+            if (newItem.type === 'transition' && 
+                (newItem.transitionType === 'crossfade' || newItem.transitionType === 'beatsync')) {
+                const insertIndex = state.timeline.length;
+                const prevIndex = insertIndex - 1;
+                
+                if (prevIndex >= 0) {
+                    const prevItem = state.timeline[prevIndex];
+                    
+                    if (prevItem.type === 'clip') {
+                        const halfDuration = newItem.duration / 2;
+                        const prevTrack = state.tracks.find(t => t.id === prevItem.trackId);
+                        
+                        if (prevTrack) {
+                            const prevClip = prevTrack.clips.find(c => c.id === prevItem.clipId);
+                            
+                            if (prevClip) {
+                                newItem.transitionData = {
+                                    prevTrackId: prevItem.trackId,
+                                    prevClipId: prevItem.clipId,
+                                    prevFileId: prevTrack.uploaded.file_id,
+                                    prevFadeStart: prevClip.end - halfDuration,
+                                    prevFadeEnd: prevClip.end,
+                                    halfDuration: halfDuration
+                                };
+                                
+                                console.log(`[Transition] ${newItem.transitionType} prepared with prev clip:`, newItem.transitionData);
+                            }
+                        }
+                    }
+                }
+            }
+            
             state.timeline.push(newItem);
             renderTimeline();
             
@@ -327,6 +397,51 @@ function insertAtPosition(targetIndex, insertBefore) {
         if (newItem.type === 'transition' && !newItem.transitionId) {
             newItem.transitionId = generateTransitionId();
         }
+        
+        // 处理淡入淡出和节拍对齐：需要修改前后片段
+        if (newItem.type === 'transition' && 
+            (newItem.transitionType === 'crossfade' || newItem.transitionType === 'beatsync')) {
+            const prevIndex = insertIndex - 1;
+            const nextIndex = insertIndex;
+            
+            if (prevIndex >= 0 && nextIndex < state.timeline.length) {
+                const prevItem = state.timeline[prevIndex];
+                const nextItem = state.timeline[nextIndex];
+                
+                // 只有当前后都是片段时才处理
+                if (prevItem.type === 'clip' && nextItem.type === 'clip') {
+                    const halfDuration = newItem.duration / 2;
+                    
+                    // 获取前后片段的轨道和片段信息
+                    const prevTrack = state.tracks.find(t => t.id === prevItem.trackId);
+                    const nextTrack = state.tracks.find(t => t.id === nextItem.trackId);
+                    
+                    if (prevTrack && nextTrack) {
+                        const prevClip = prevTrack.clips.find(c => c.id === prevItem.clipId);
+                        const nextClip = nextTrack.clips.find(c => c.id === nextItem.clipId);
+                        
+                        if (prevClip && nextClip) {
+                            // 存储过渡信息到过渡块
+                            newItem.transitionData = {
+                                prevTrackId: prevItem.trackId,
+                                prevClipId: prevItem.clipId,
+                                prevFileId: prevTrack.uploaded.file_id,
+                                prevFadeStart: prevClip.end - halfDuration,
+                                prevFadeEnd: prevClip.end,
+                                nextTrackId: nextItem.trackId,
+                                nextClipId: nextItem.clipId,
+                                nextFileId: nextTrack.uploaded.file_id,
+                                nextFadeStart: nextClip.start,
+                                nextFadeEnd: nextClip.start + halfDuration
+                            };
+                            
+                            console.log(`[Transition] ${newItem.transitionType} between clips:`, newItem.transitionData);
+                        }
+                    }
+                }
+            }
+        }
+        
         state.timeline.splice(insertIndex, 0, newItem);
     }
     

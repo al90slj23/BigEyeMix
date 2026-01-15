@@ -90,17 +90,84 @@ async function stitchWaveformData(segments) {
             }
         } else if (seg.type === 'transition') {
             // 过渡块
-            if (seg.transition_type === 'magicfill' && seg.magic_output_id) {
-                // 如果魔法填充已生成，获取其波形
+            if (seg.transition_type === 'crossfade' || seg.transition_type === 'beatsync') {
+                // 淡入淡出和节拍对齐：使用前后段的重叠部分
+                if (seg.transition_data && seg.transition_data.prevFileId && seg.transition_data.nextFileId) {
+                    const data = seg.transition_data;
+                    
+                    try {
+                        // 获取前段的淡出部分波形
+                        const prevResponse = await axios.get(API_BASE + `/api/uploads/${data.prevFileId}/waveform`);
+                        if (prevResponse.data.success && prevResponse.data.waveform && Array.isArray(prevResponse.data.waveform) && prevResponse.data.waveform.length > 0) {
+                            const prevPeaks = prevResponse.data.waveform;
+                            const prevDuration = prevResponse.data.duration;
+                            
+                            const fadeStartRatio = data.prevFadeStart / prevDuration;
+                            const fadeEndRatio = data.prevFadeEnd / prevDuration;
+                            const fadeStartIndex = Math.floor(fadeStartRatio * prevPeaks.length);
+                            const fadeEndIndex = Math.ceil(fadeEndRatio * prevPeaks.length);
+                            
+                            const prevFadePeaks = prevPeaks.slice(fadeStartIndex, fadeEndIndex);
+                            
+                            // 获取后段的淡入部分波形
+                            const nextResponse = await axios.get(API_BASE + `/api/uploads/${data.nextFileId}/waveform`);
+                            if (nextResponse.data.success && nextResponse.data.waveform && Array.isArray(nextResponse.data.waveform) && nextResponse.data.waveform.length > 0) {
+                                const nextPeaks = nextResponse.data.waveform;
+                                const nextDuration = nextResponse.data.duration;
+                                
+                                const nextFadeStartRatio = data.nextFadeStart / nextDuration;
+                                const nextFadeEndRatio = data.nextFadeEnd / nextDuration;
+                                const nextFadeStartIndex = Math.floor(nextFadeStartRatio * nextPeaks.length);
+                                const nextFadeEndIndex = Math.ceil(nextFadeEndRatio * nextPeaks.length);
+                                
+                                const nextFadePeaks = nextPeaks.slice(nextFadeStartIndex, nextFadeEndIndex);
+                                
+                                // 混合两段波形（简单平均）
+                                const mixedLength = Math.max(prevFadePeaks.length, nextFadePeaks.length);
+                                const mixedPeaks = [];
+                                for (let i = 0; i < mixedLength; i++) {
+                                    const prevVal = i < prevFadePeaks.length ? prevFadePeaks[i] : 0;
+                                    const nextVal = i < nextFadePeaks.length ? nextFadePeaks[i] : 0;
+                                    mixedPeaks.push((prevVal + nextVal) / 2);
+                                }
+                                
+                                stitchedPeaks.push(...mixedPeaks);
+                                totalSamples += mixedPeaks.length;
+                                console.log(`[Preview] Added ${seg.transition_type} waveform: ${mixedPeaks.length} peaks`);
+                            } else {
+                                // 后段波形获取失败，使用占位
+                                const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                                stitchedPeaks.push(...new Array(estimatedSamples).fill(0.3));
+                                totalSamples += estimatedSamples;
+                            }
+                        } else {
+                            // 前段波形获取失败，使用占位
+                            const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                            stitchedPeaks.push(...new Array(estimatedSamples).fill(0.3));
+                            totalSamples += estimatedSamples;
+                        }
+                    } catch (error) {
+                        console.log(`[Preview] Failed to get transition waveform:`, error);
+                        const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                        stitchedPeaks.push(...new Array(estimatedSamples).fill(0.3));
+                        totalSamples += estimatedSamples;
+                    }
+                } else {
+                    // 没有完整的过渡数据，使用占位
+                    const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
+                    stitchedPeaks.push(...new Array(estimatedSamples).fill(0.3));
+                    totalSamples += estimatedSamples;
+                }
+            } else if (seg.transition_type === 'magicfill' && seg.magic_output_id) {
+                // 魔法填充：如果已生成，获取其波形
                 try {
                     const response = await axios.get(API_BASE + `/api/uploads/${seg.magic_output_id}/waveform`);
                     if (response.data.success && response.data.waveform && Array.isArray(response.data.waveform) && response.data.waveform.length > 0) {
-                        const magicPeaks = response.data.waveform;  // 直接使用 waveform 数组
+                        const magicPeaks = response.data.waveform;
                         stitchedPeaks.push(...magicPeaks);
                         totalSamples += magicPeaks.length;
                         console.log(`[Preview] Added magic fill waveform: ${magicPeaks.length} peaks`);
                     } else {
-                        // 占位数据
                         const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
                         stitchedPeaks.push(...new Array(estimatedSamples).fill(0.3));
                         totalSamples += estimatedSamples;
@@ -111,7 +178,7 @@ async function stitchWaveformData(segments) {
                     totalSamples += estimatedSamples;
                 }
             } else {
-                // 其他过渡类型（静音、淡入淡出等）使用低幅度波形
+                // 其他过渡类型（静音等）使用低幅度波形
                 const estimatedSamples = Math.ceil((seg.duration / previewTotalDuration) * 800);
                 const amplitude = seg.transition_type === 'silence' ? 0.05 : 0.3;
                 stitchedPeaks.push(...new Array(estimatedSamples).fill(amplitude));
@@ -220,25 +287,74 @@ async function doUpdatePreview() {
             const transType = item.transitionType || 'magicfill';
             const duration = item.duration;
             
-            segments.push({
-                type: 'transition',
-                transition_type: transType,
-                duration: duration,
-                magic_output_id: item.magicOutputId || null  // 如果已生成，使用缓存
-            });
-            
-            previewSegments.push({
-                index: index,
-                start: currentTime,
-                end: currentTime + duration,
-                color: '#e0e0e0',
-                label: duration + 's',
-                type: 'transition',
-                transitionType: transType,
-                magicState: item.magicState || (transType === 'magicfill' ? 'magic-loading' : '')
-            });
-            currentTime += duration;
-            totalDuration += duration;
+            // 对于淡入淡出和节拍对齐，不是插入新段，而是处理前后段的重叠
+            if ((transType === 'crossfade' || transType === 'beatsync') && item.transitionData) {
+                const data = item.transitionData;
+                const halfDuration = duration / 2;
+                
+                // 如果有完整的前后信息
+                if (data.prevFileId && data.nextFileId) {
+                    segments.push({
+                        type: 'transition',
+                        transition_type: transType,
+                        duration: duration,
+                        transition_data: data
+                    });
+                    
+                    previewSegments.push({
+                        index: index,
+                        start: currentTime,
+                        end: currentTime + duration,
+                        color: transType === 'crossfade' ? '#f59e0b' : '#ec4899',
+                        label: duration + 's',
+                        type: 'transition',
+                        transitionType: transType
+                    });
+                    currentTime += duration;
+                    totalDuration += duration;
+                } else {
+                    // 只有前段信息，等待后段
+                    segments.push({
+                        type: 'transition',
+                        transition_type: transType,
+                        duration: duration,
+                        transition_data: data
+                    });
+                    
+                    previewSegments.push({
+                        index: index,
+                        start: currentTime,
+                        end: currentTime + duration,
+                        color: '#e0e0e0',
+                        label: duration + 's',
+                        type: 'transition',
+                        transitionType: transType
+                    });
+                    currentTime += duration;
+                    totalDuration += duration;
+                }
+            } else {
+                // 魔法填充和静音
+                segments.push({
+                    type: 'transition',
+                    transition_type: transType,
+                    duration: duration,
+                    magic_output_id: item.magicOutputId || null
+                });
+                
+                previewSegments.push({
+                    index: index,
+                    start: currentTime,
+                    end: currentTime + duration,
+                    color: '#e0e0e0',
+                    label: duration + 's',
+                    type: 'transition',
+                    transitionType: transType,
+                    magicState: item.magicState || (transType === 'magicfill' ? 'magic-loading' : '')
+                });
+                currentTime += duration;
+                totalDuration += duration;
+            }
         }
     }
     
@@ -568,7 +684,20 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
         isPreviewLoading = false;  // 重置加载标志
         previewLoading.style.display = 'none';
         previewWaveformEl.style.display = 'block';
-        previewPlayBtn.disabled = false;
+        
+        // 检查是否所有片段都已准备好（没有 loading 状态的魔法填充）
+        const hasLoadingMagic = previewSegments.some(seg => 
+            seg.type === 'transition' && 
+            seg.transitionType === 'magicfill' && 
+            seg.magicState === 'magic-loading'
+        );
+        
+        // 只有当所有片段都准备好时才启用播放
+        previewPlayBtn.disabled = hasLoadingMagic;
+        
+        if (hasLoadingMagic) {
+            console.log('[Preview] Play disabled: waiting for magic fill to complete');
+        }
         
         // 显示片段条
         const previewSegmentsEl = document.getElementById('previewSegments');
