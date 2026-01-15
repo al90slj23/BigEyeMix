@@ -466,6 +466,32 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
     const minZoomMultiplier = 1;
     const maxZoomMultiplier = 50;
     
+    // 预加载所有音频片段
+    let allAudioLoaded = false;
+    const preloadAllAudio = async () => {
+        console.log('[Preview] Preloading all audio segments...');
+        try {
+            // 初始化 AudioContext
+            window.previewPlayer.initAudioContext();
+            
+            for (const seg of segments) {
+                if (seg.type === 'clip') {
+                    console.log(`[Preview] Preloading ${seg.file_id}...`);
+                    await window.previewPlayer.loadAudioBuffer(seg.file_id, seg.start, seg.end);
+                }
+            }
+            allAudioLoaded = true;
+            console.log('[Preview] All audio segments preloaded successfully');
+            
+            // 所有音频加载完成后才启用播放按钮
+            previewPlayBtn.disabled = false;
+        } catch (error) {
+            console.error('[Preview] Failed to preload audio:', error);
+            allAudioLoaded = false;
+            previewPlayBtn.disabled = true;
+        }
+    };
+    
     // 更新标尺位置
     const updateRulerPosition = (progress, autoScroll = false) => {
         if (!rulerEl) return;
@@ -680,8 +706,21 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
     }
 
     // wavesurfer ready
-    wavesurfer.on('ready', () => {
-        isPreviewLoading = false;  // 重置加载标志
+    wavesurfer.on('ready', async () => {
+        // 波形数据准备好了，但还不显示，先预加载所有音频
+        console.log('[Preview] Waveform ready, preloading audio...');
+        
+        // 初始化 Web Audio API 播放器
+        if (!window.previewPlayer) {
+            window.previewPlayer = new PreviewPlayer();
+        }
+        window.previewPlayer.setSegments(segments, previewTotalDuration);
+        
+        // 预加载所有音频
+        await preloadAllAudio();
+        
+        // 音频加载完成后才显示波形和启用播放
+        isPreviewLoading = false;
         previewLoading.style.display = 'none';
         previewWaveformEl.style.display = 'block';
         
@@ -692,11 +731,14 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
             seg.magicState === 'magic-loading'
         );
         
-        // 只有当所有片段都准备好时才启用播放
-        previewPlayBtn.disabled = hasLoadingMagic;
+        // 只有当所有片段都准备好且音频已加载时才启用播放
+        previewPlayBtn.disabled = hasLoadingMagic || !allAudioLoaded;
         
         if (hasLoadingMagic) {
             console.log('[Preview] Play disabled: waiting for magic fill to complete');
+        }
+        if (!allAudioLoaded) {
+            console.log('[Preview] Play disabled: audio still loading');
         }
         
         // 显示片段条
@@ -716,12 +758,6 @@ function initPreviewWavesurferWithStitchedData(segments, waveformData) {
         }
         
         initTimelineProgress();
-        
-        // 初始化 Web Audio API 播放器
-        if (!window.previewPlayer) {
-            window.previewPlayer = new PreviewPlayer();
-        }
-        window.previewPlayer.setSegments(segments, previewTotalDuration);
         
         // 设置播放器回调
         window.previewPlayer.onProgressUpdate = (currentTime) => {
