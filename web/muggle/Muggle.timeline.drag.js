@@ -564,7 +564,7 @@ function confirmDeleteItem(index, x, y) {
         const track = state.tracks.find(t => t.id === item.trackId);
         itemName = track ? `${track.label}${item.clipId}` : '片段';
     } else {
-        itemName = `${item.duration}s 过渡`;
+        itemName = `${item.duration}s 处理`;
     }
     
     showConfirmDelete(

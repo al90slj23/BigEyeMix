@@ -404,38 +404,53 @@
 .timeline-item:not(.played):not(.playing) { opacity: 0.6; }
 .timeline-item.played, .timeline-item.playing { opacity: 1; }
 
-/* ==================== 过渡块处理中状态（跑马灯边框）==================== */
+/* ==================== 处理块处理中状态（彩虹跑马灯边框）==================== */
 .timeline-item.transition-item.magic-loading,
 .timeline-item.transition-item.processing {
     position: relative;
-    animation: marqueeBorder 2s linear infinite, processingPulse 2s ease-in-out infinite;
+    animation: rainbowMarqueeBorder 2s linear infinite, processingPulse 2s ease-in-out infinite;
 }
 
-@keyframes marqueeBorder {
+@keyframes rainbowMarqueeBorder {
     0% { 
         box-shadow: 
-            0 0 0 3px #667eea,
-            0 0 12px rgba(102, 126, 234, 0.6);
+            0 0 0 3px #ff0000,
+            0 0 12px rgba(255, 0, 0, 0.6);
     }
-    25% { 
+    14% { 
         box-shadow: 
-            0 0 0 3px #764ba2,
-            0 0 12px rgba(118, 75, 162, 0.6);
+            0 0 0 3px #ffa500,
+            0 0 12px rgba(255, 165, 0, 0.6);
     }
-    50% { 
+    28% { 
         box-shadow: 
-            0 0 0 3px #667eea,
-            0 0 12px rgba(102, 126, 234, 0.6);
+            0 0 0 3px #ffff00,
+            0 0 12px rgba(255, 255, 0, 0.6);
     }
-    75% { 
+    42% { 
         box-shadow: 
-            0 0 0 3px #764ba2,
-            0 0 12px rgba(118, 75, 162, 0.6);
+            0 0 0 3px #00ff00,
+            0 0 12px rgba(0, 255, 0, 0.6);
+    }
+    57% { 
+        box-shadow: 
+            0 0 0 3px #00ffff,
+            0 0 12px rgba(0, 255, 255, 0.6);
+    }
+    71% { 
+        box-shadow: 
+            0 0 0 3px #0000ff,
+            0 0 12px rgba(0, 0, 255, 0.6);
+    }
+    85% { 
+        box-shadow: 
+            0 0 0 3px #8b00ff,
+            0 0 12px rgba(139, 0, 255, 0.6);
     }
     100% { 
         box-shadow: 
-            0 0 0 3px #667eea,
-            0 0 12px rgba(102, 126, 234, 0.6);
+            0 0 0 3px #ff0000,
+            0 0 12px rgba(255, 0, 0, 0.6);
     }
 }
 

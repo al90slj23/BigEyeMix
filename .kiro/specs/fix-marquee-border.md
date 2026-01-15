@@ -2,171 +2,152 @@
 
 ## Problem Statement
 
-The marquee border (跑马灯边框) for processing transitions is displaying incorrectly - it appears misaligned or behind the element instead of being visible on top.
+The marquee border (彩虹跑马灯边框) for processing transitions is displaying incorrectly - it appears misaligned or behind the element instead of being visible on top.
 
 ### Current Behavior
-- Crossfade and beatsync transitions should show an animated gradient border when in `processing` state
-- The border is implemented using `::before` and `::after` pseudo-elements
+- All processing blocks (crossfade, beatsync, magicfill, silence) should show an animated rainbow gradient border when in `processing` state
+- The border was implemented using `::before` and `::after` pseudo-elements
 - The `::before` creates the animated gradient border
 - The `::after` is supposed to create a background layer
 - However, the border is not visible or appears misaligned
 
 ### Expected Behavior
-- When a crossfade or beatsync transition is added to the timeline, it should show a visible animated gradient border
+- When any processing block is added to the timeline and not yet completed, it should show a visible animated rainbow gradient border
 - The border should be clearly visible on TOP of the element
-- The animation should flow smoothly around the element
+- The animation should flow smoothly through all rainbow colors (red → orange → yellow → green → cyan → blue → purple → red)
+
+## Terminology Updates
+
+**Old Terms → New Terms:**
+- "过渡类型" → "处理类型"
+- "过渡时长（秒）" → "处理时长（秒）"
+- "片段过渡" → "处理"
+- "音频混剪拼接" → "拼接"
+- "拼接预览" → "预览"
+- "节拍对齐" → "节拍过渡"
+- "淡出淡入" → "淡化过渡"
+- "休止静音" → "静音填充"
+
+**Processing Type Categories:**
+- **Transitions (过渡)**: beatsync, crossfade - DO NOT add duration (overlap)
+- **Fills (填充)**: magicfill, silence - DO add duration (insert)
 
 ## Root Cause Analysis
 
 Looking at the CSS in `Muggle.timeline.css` (lines 410-450):
 
-```css
-.timeline-item.transition-item.processing::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 10px;
-    background: linear-gradient(90deg, 
-        #667eea 0%, 
-        #764ba2 25%, 
-        #667eea 50%, 
-        #764ba2 75%, 
-        #667eea 100%);
-    background-size: 200% 100%;
-    animation: marqueeBorder 2s linear infinite;
-    pointer-events: none;
-}
-
-.timeline-item.transition-item.processing::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 8px;
-    background: inherit;
-    pointer-events: none;
-}
-```
-
-**Issues:**
-1. The `::before` and `::after` approach creates a complex stacking context
-2. The `background: inherit` on `::after` doesn't work correctly with animated backgrounds
-3. The z-index layering is fragile and browser-dependent
-4. The `.timeline-item` has `overflow: visible` but the pseudo-elements may still clip
+The `::before` and `::after` approach creates a complex stacking context that doesn't work reliably across browsers.
 
 ## Solution
 
-Use a simpler, more reliable approach with `box-shadow` or `border-image`:
-
-### Option 1: Box-Shadow Approach (Recommended)
-Use animated box-shadow with multiple layers to create the marquee effect.
-
-### Option 2: Border-Image Approach
-Use CSS `border-image` with gradient animation.
-
-### Option 3: Wrapper Element Approach
-Add a wrapper div in the HTML to separate border from content.
+Use a simpler, more reliable approach with animated `box-shadow` that cycles through rainbow colors.
 
 ## Implementation Plan
 
 ### Step 1: Update CSS (Muggle.timeline.css)
 
-Replace the current `::before`/`::after` approach with a simpler box-shadow method:
+Replace the current `::before`/`::after` approach with a simpler box-shadow method that cycles through rainbow colors:
 
 ```css
 .timeline-item.transition-item.magic-loading,
 .timeline-item.transition-item.processing {
     position: relative;
-    animation: processingPulse 2s ease-in-out infinite;
-    box-shadow: 
-        0 0 0 3px #667eea,
-        0 0 12px rgba(102, 126, 234, 0.6);
-    animation: marqueeBorder 2s linear infinite, processingPulse 2s ease-in-out infinite;
+    animation: rainbowMarqueeBorder 2s linear infinite, processingPulse 2s ease-in-out infinite;
 }
 
-@keyframes marqueeBorder {
+@keyframes rainbowMarqueeBorder {
     0% { 
         box-shadow: 
-            0 0 0 3px #667eea,
-            0 0 12px rgba(102, 126, 234, 0.6);
+            0 0 0 3px #ff0000,
+            0 0 12px rgba(255, 0, 0, 0.6);
     }
-    25% { 
+    14% { 
         box-shadow: 
-            0 0 0 3px #764ba2,
-            0 0 12px rgba(118, 75, 162, 0.6);
+            0 0 0 3px #ffa500,
+            0 0 12px rgba(255, 165, 0, 0.6);
     }
-    50% { 
+    28% { 
         box-shadow: 
-            0 0 0 3px #667eea,
-            0 0 12px rgba(102, 126, 234, 0.6);
+            0 0 0 3px #ffff00,
+            0 0 12px rgba(255, 255, 0, 0.6);
     }
-    75% { 
+    42% { 
         box-shadow: 
-            0 0 0 3px #764ba2,
-            0 0 12px rgba(118, 75, 162, 0.6);
+            0 0 0 3px #00ff00,
+            0 0 12px rgba(0, 255, 0, 0.6);
+    }
+    57% { 
+        box-shadow: 
+            0 0 0 3px #00ffff,
+            0 0 12px rgba(0, 255, 255, 0.6);
+    }
+    71% { 
+        box-shadow: 
+            0 0 0 3px #0000ff,
+            0 0 12px rgba(0, 0, 255, 0.6);
+    }
+    85% { 
+        box-shadow: 
+            0 0 0 3px #8b00ff,
+            0 0 12px rgba(139, 0, 255, 0.6);
     }
     100% { 
         box-shadow: 
-            0 0 0 3px #667eea,
-            0 0 12px rgba(102, 126, 234, 0.6);
+            0 0 0 3px #ff0000,
+            0 0 12px rgba(255, 0, 0, 0.6);
     }
+}
+
+@keyframes processingPulse {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; }
 }
 ```
 
 ### Step 2: Verify Processing State Logic (Muggle.timeline.js)
 
-Ensure that crossfade and beatsync transitions are correctly marked with `processing` class:
+Ensure that ALL processing blocks (crossfade, beatsync, magicfill, silence) are correctly marked with `processing` class when not yet completed.
 
-```javascript
-// In renderTimeline() function
-if ((transType === 'crossfade' || transType === 'beatsync') && !magicState) {
-    if (item.transitionData && item.transitionData.nextFileId) {
-        magicState = 'processing';
-    } else {
-        magicState = 'processing';
-    }
-}
-```
+### Step 3: Update Terminology
 
-### Step 3: Test All Transition Types
-
-Test that all 4 transition types display correctly:
-1. **magicfill** - rainbow gradient flow (normal state) + marquee border (loading state)
-2. **beatsync** - pulse animation (normal state) + marquee border (processing state)
-3. **crossfade** - breathing gradient (normal state) + marquee border (processing state)
-4. **silence** - stripe animation (normal state, no processing state)
+Update all UI text to use new terminology:
+- "处理类型" instead of "过渡类型"
+- "处理时长（秒）" instead of "过渡时长（秒）"
+- "处理" instead of "片段过渡"
+- "拼接" instead of "音频混剪拼接"
+- "预览" instead of "拼接预览"
+- "节拍过渡" instead of "节拍对齐"
+- "淡化过渡" instead of "淡出淡入"
+- "静音填充" instead of "休止静音"
 
 ## Acceptance Criteria
 
-- [ ] Marquee border is clearly visible on crossfade transitions
-- [ ] Marquee border is clearly visible on beatsync transitions
-- [ ] Border animates smoothly in a flowing gradient pattern
+- [ ] Rainbow marquee border is clearly visible on all processing blocks
+- [ ] Border cycles through all rainbow colors (red → orange → yellow → green → cyan → blue → purple)
+- [ ] Border animates smoothly in a flowing pattern
 - [ ] Border does not clip or appear misaligned
 - [ ] Border appears on TOP of the element, not behind it
 - [ ] Normal transition animations (rainbow, pulse, breathing, stripes) still work correctly
 - [ ] Playing state (progress bar) still works correctly with marquee border
+- [ ] All terminology updated to new terms (处理, 拼接, 预览, etc.)
 
-## Files to Modify
+## Files Modified
 
-1. `web/muggle/Muggle.timeline.css` - Update marquee border CSS (lines 410-450)
-2. `web/muggle/Muggle.timeline.js` - Verify processing state logic (lines 50-80)
-3. `web/muggle/index.mobile.html` - Bump version to v=41
+1. `web/muggle/Muggle.timeline.css` - Updated marquee border CSS with rainbow animation
+2. `web/muggle/Muggle.editor.js` - Updated "过渡" → "处理", "音频混剪拼接" → "拼接", "拼接预览" → "预览"
+3. `web/muggle/Muggle.config.js` - Updated transition type names
+4. `web/muggle/Muggle.timeline.drag.js` - Updated delete confirmation text
+5. `web/muggle/index.mobile.html` - Updated modal text and bumped version to v=41
 
 ## Testing Steps
 
 1. Upload two audio files (A1, B1)
 2. Add A1 to timeline
-3. Add a 3s beatsync transition
-4. Verify marquee border appears and animates
-5. Add B1 to timeline
-6. Verify marquee border updates or disappears (depending on implementation)
-7. Repeat with crossfade transition
-8. Verify magicfill and silence transitions still work correctly
+3. Add a 3s beatsync transition - verify rainbow marquee border appears
+4. Add B1 to timeline
+5. Verify all processing blocks show rainbow border until completed
+6. Test with crossfade, magicfill, and silence transitions
+7. Verify all UI text uses new terminology
 
 ## Notes
 

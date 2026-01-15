@@ -94,12 +94,12 @@
     <div class="modal-overlay" id="customTransitionModal">
         <div class="modal-content" style="max-width: 340px;">
             <div class="modal-header">
-                <span class="modal-title">添加过渡</span>
+                <span class="modal-title">添加处理</span>
                 <button class="modal-close" onclick="closeCustomTransitionModal()"><i data-lucide="x"></i></button>
             </div>
             <div class="modal-body" style="padding: 20px;">
                 <div style="margin-bottom: 16px;">
-                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">过渡类型</label>
+                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">处理类型</label>
                     <div class="transition-type-selector" id="transitionTypeSelector">
                         <div class="transition-type-option selected" data-type="magicfill">
                             <i data-lucide="sparkles"></i>
@@ -107,25 +107,25 @@
                         </div>
                         <div class="transition-type-option" data-type="beatsync">
                             <i data-lucide="activity"></i>
-                            <span>节拍对齐</span>
+                            <span>节拍过渡</span>
                         </div>
                         <div class="transition-type-option" data-type="crossfade">
                             <i data-lucide="git-merge"></i>
-                            <span>淡出淡入</span>
+                            <span>淡化过渡</span>
                         </div>
                         <div class="transition-type-option" data-type="silence">
                             <i data-lucide="volume-x"></i>
-                            <span>休止静音</span>
+                            <span>静音填充</span>
                         </div>
                     </div>
                 </div>
                 <div style="margin-bottom: 16px;">
-                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">过渡时长（秒）</label>
+                    <label style="font-size: 13px; color: #666; display: block; margin-bottom: 8px;">处理时长（秒）</label>
                     <input type="number" id="customTransitionInput" min="1" max="30" step="1" value="3" 
                            style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center;">
                 </div>
                 <button onclick="addCustomTransition()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                    添加过渡块
+                    添加处理块
                 </button>
             </div>
         </div>

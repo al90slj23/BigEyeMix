@@ -80,17 +80,15 @@ function renderEditorAndTimeline() {
         
         <div class="timeline-section">
             <div class="timeline-title">
-                <i data-lucide="layers"></i> 音频混剪拼接
+                <i data-lucide="layers"></i> 拼接
                 <span class="timeline-hint">拖拽片段到下方排列</span>
-            </div>
-            
             <div class="available-blocks">
                 <div class="blocks-row">
                     <div class="blocks-label">片段</div>
                     <div class="blocks-list" id="clipBlocks"></div>
                 </div>
                 <div class="blocks-row">
-                    <div class="blocks-label">过渡</div>
+                    <div class="blocks-label">处理</div>
                     <div class="blocks-list" id="transitionBlocks">
                         ${(typeof transitionPresets !== 'undefined' ? transitionPresets : [1, 3, 5, 10]).map(sec => `
                             <div class="block transition-block" draggable="true" data-type="transition" data-duration="${sec}" data-transition-type="magicfill">
@@ -104,13 +102,18 @@ function renderEditorAndTimeline() {
                 </div>
             </div>
             
-            <div class="timeline-drop" id="timelineDrop">
-                <div class="timeline-placeholder" id="timelinePlaceholder">
-                    <i data-lucide="arrow-down"></i> 拖拽片段到这里
-                </div>
-                <div class="timeline-items" id="timelineItems"></div>
-                <div class="timeline-trash" id="timelineTrash">
-                    <i data-lucide="trash-2"></i>
+            <div class="blocks-row">
+                <div class="blocks-label">拼接</div>
+                <div style="flex: 1;">
+                    <div class="timeline-drop" id="timelineDrop">
+                        <div class="timeline-placeholder" id="timelinePlaceholder">
+                            <i data-lucide="arrow-down"></i> 拖拽片段到这里
+                        </div>
+                        <div class="timeline-items" id="timelineItems"></div>
+                        <div class="timeline-trash" id="timelineTrash">
+                            <i data-lucide="trash-2"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -136,7 +139,7 @@ function renderEditorAndTimeline() {
             <div class="preview-section" id="previewSection" style="display:none;">
                 <div class="preview-header">
                     <div class="preview-title">
-                        <i data-lucide="eye"></i> 拼接预览
+                        <i data-lucide="eye"></i> 预览
                     </div>
                     <div class="preview-duration" id="previewDuration"></div>
                 </div>
