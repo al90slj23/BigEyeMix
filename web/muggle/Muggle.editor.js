@@ -72,7 +72,7 @@ function renderEditorAndTimeline() {
                         ${renderClips(track)}
                     </div>
                     <div class="add-clip-btn" onclick="addClip(${track.id})" style="border-color:${track.color.bg};color:${track.color.bg}">
-                        <i data-lucide="plus"></i> 添加片段
+                        <i data-lucide="plus"></i> 添加待用片段
                     </div>
                 </div>
             `).join('')}
