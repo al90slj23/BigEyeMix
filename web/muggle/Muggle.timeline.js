@@ -63,10 +63,15 @@ function renderTimeline() {
                 // 确定处理状态
                 let magicState = item.magicState || '';
                 
-                // 对于 crossfade 和 beatsync，如果没有完整的 transitionData，标记为 processing
+                // 对于 crossfade 和 beatsync，始终标记为 processing（因为需要真正的音频处理）
                 if ((transType === 'crossfade' || transType === 'beatsync') && !magicState) {
-                    if (!item.transitionData || !item.transitionData.nextFileId) {
-                        magicState = 'processing';  // 等待后续片段
+                    // 检查是否有完整的前后数据
+                    if (item.transitionData && item.transitionData.nextFileId) {
+                        // 有完整数据，但仍需要处理（目前是占位实现）
+                        magicState = 'processing';
+                    } else {
+                        // 没有完整数据，等待后续片段
+                        magicState = 'processing';
                     }
                 }
                 
