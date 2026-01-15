@@ -140,9 +140,9 @@ function renderEditorAndTimeline() {
                     </div>
                     <div class="preview-duration" id="previewDuration"></div>
                 </div>
-                <!-- 预览片段显示条 -->
-                <div class="preview-segments" id="previewSegments"></div>
                 <div class="preview-waveform-wrapper waveform-wrapper" id="previewWaveformWrapper">
+                    <!-- 预览片段显示条 -->
+                    <div class="preview-segments" id="previewSegments"></div>
                     <div class="waveform-main">
                         <div class="scroll-edge scroll-edge-left" id="previewScrollLeft">
                             <i data-lucide="chevrons-left"></i>
