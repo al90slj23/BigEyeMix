@@ -27,6 +27,9 @@ class TencentASRService:
         self.endpoint = f'https://{self.host}'
         self.version = '2019-06-14'
         
+        # 调试日志
+        logger.info(f"腾讯云 ASR 初始化: SecretId={'已配置' if self.secret_id else '未配置'}, SecretKey={'已配置' if self.secret_key else '未配置'}, AppId={self.app_id or '未配置'}")
+        
     def _sign(self, secret_key: str, string_to_sign: str) -> str:
         """生成签名"""
         return hmac.new(
