@@ -441,14 +441,15 @@ async function applyMuggleSpliceResult(result) {
                     const prevTrack = state.tracks.find(t => t.id === prevItem.trackId);
                     const prevClip = prevTrack?.clips.find(c => c.id === prevItem.clipId);
                     
-                    if (prevClip) {
+                    if (prevClip && prevTrack.uploaded) {
                         const halfDuration = transitionItem.duration / 2;
                         const prevEnd = prevItem.customEnd !== undefined ? prevItem.customEnd : prevClip.end;
                         
-                        // 存储过渡数据
+                        // 存储过渡数据（包含 prevFileId）
                         transitionItem.transitionData = {
                             prevTrackId: prevItem.trackId,
                             prevClipId: prevItem.clipId,
+                            prevFileId: prevTrack.uploaded.file_id,
                             prevFadeStart: prevEnd - halfDuration,
                             prevFadeEnd: prevEnd
                         };
@@ -458,6 +459,11 @@ async function applyMuggleSpliceResult(result) {
             
             state.timeline.push(transitionItem);
         }
+    }
+    
+    // 更新不完整的过渡块（补充 nextFileId 等信息）
+    if (typeof updateIncompleteTransitions === 'function') {
+        updateIncompleteTransitions();
     }
     
     // 重新渲染时间轴（如果在手动拼接标签页）
