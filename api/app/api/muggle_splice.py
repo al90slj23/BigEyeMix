@@ -139,8 +139,11 @@ async def generate_muggle_splice(request: MuggleSpliceRequest):
                     {"role": "system", "content": request.system_prompt},
                     {"role": "user", "content": structured_prompt}
                 ],
-                "temperature": 0.1 if retry_count > 0 else 0.3,  # 重试时降低温度
-                "max_tokens": 2000
+                "temperature": 0.0,  # 代码生成/数学解题场景，需要准确结果
+                "max_tokens": 2000,
+                "response_format": {
+                    "type": "json_object"  # 强制 JSON 输出
+                }
             }
             
             # 调用 AI API
@@ -848,7 +851,7 @@ async def generate_muggle_splice_stream(request: MuggleSpliceRequest):
                     {"role": "system", "content": request.system_prompt},
                     {"role": "user", "content": structured_prompt}
                 ],
-                "temperature": 0.3,
+                "temperature": 0.0,  # 代码生成/数学解题场景，需要准确结果
                 "max_tokens": 4000,
                 "stream": True,  # 启用流式输出
                 "response_format": {
