@@ -122,7 +122,7 @@ async def generate_muggle_splice(request: MuggleSpliceRequest):
             if deepseek_key:
                 api_url = "https://api.deepseek.com/chat/completions"
                 api_key = deepseek_key
-                model = "deepseek-chat"
+                model = "deepseek-reasoner"  # 使用推理模型，更强的逻辑理解能力
             else:
                 api_url = "https://api.moonshot.cn/v1/chat/completions"
                 api_key = moonshot_key
