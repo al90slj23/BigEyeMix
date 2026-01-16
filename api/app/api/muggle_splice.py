@@ -231,6 +231,38 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 3. 不能有连续的transition指令
 4. 时长必须为正数且合理（≤30秒）
 5. 必须包含至少一个clip指令
+6. **当用户说"去掉某段"或"不要某段"时，需要将该音频拆分成两个clip指令：**
+   - 第一个clip：从开始到去掉部分的开始时间（使用customStart和customEnd）
+   - 第二个clip：从去掉部分的结束时间到音频结尾（使用customStart和customEnd）
+   - 例如：去掉1:56~2:34，则生成两个clip：0~1:56 和 2:34~结尾
+
+示例1 - 去掉中间某段：
+用户："《知我》1分56～2分34这一段不要，剩下的部分《知我》＋《春颂》（整段）"
+正确理解：
+- 《知我》0~1:56（第一部分）
+- 《知我》2:34~结尾（第二部分）  
+- 《春颂》全部
+正确输出：
+{{
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 116}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 154, "customEnd": 192}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1"}}
+  ]
+}}
+
+示例2 - 完整拼接：
+用户："《知我》全部 + 《春颂》全部"
+正确输出：
+{{
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1"}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1"}}
+  ]
+}}
 
 请严格按照以下JSON格式返回：
 
@@ -242,8 +274,8 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
       "type": "clip",
       "trackId": "轨道ID",
       "clipId": "片段ID",
-      "customStart": 可选的自定义开始时间,
-      "customEnd": 可选的自定义结束时间
+      "customStart": 可选的自定义开始时间（秒，数字类型）,
+      "customEnd": 可选的自定义结束时间（秒，数字类型）
     }},
     {{
       "type": "transition", 
