@@ -107,6 +107,12 @@ BigEyeMix/
 | `/api/transition/recommend` | POST | 推荐最佳过渡方案 |
 | `/api/magic/fill` | POST | 魔法填充过渡 |
 
+### AI 智能接口
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/ai/splice` | POST | AI 智能拼接（DeepSeek） |
+| `/api/asr/recognize` | POST | 语音识别（腾讯云 ASR） |
+
 ---
 
 ## 🛠️ 技术栈
@@ -122,6 +128,8 @@ BigEyeMix/
 - pydub (音频处理)
 - ffmpeg (音频编解码)
 - PiAPI ACE-Step (AI 音频生成)
+- DeepSeek (AI 智能拼接)
+- 腾讯云 ASR (语音识别)
 
 ### 基础设施
 - Nginx (反向代理)
@@ -151,7 +159,10 @@ BigEyeMix/
 - [x] 波形预览和可视化
 - [x] 音频播放器
 - [x] AI 智能拼接（DeepSeek 集成）
+- [x] 语音输入（腾讯云 ASR）
 - [x] 智能节拍对齐和过渡优化
+- [x] 响应式首页（PC/Mobile）
+- [x] 动态 Logo 特效
 
 ### 中期
 - [ ] 前端集成节拍对齐 UI

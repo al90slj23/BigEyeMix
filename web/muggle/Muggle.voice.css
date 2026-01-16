@@ -5,24 +5,30 @@
 
 /* 语音输入按钮 */
 .voice-input-btn {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
-    color: white;
-    border: none;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
+    border: 2px solid #ff6b6b;
+    background: white;
+    color: #ff6b6b;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
     flex-shrink: 0;
 }
 
 .voice-input-btn i {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
+    stroke-width: 2;
+}
+
+.voice-input-btn:hover {
+    background: #ff6b6b;
+    color: white;
+    transform: scale(1.05);
 }
 
 .voice-input-btn:active {
@@ -30,42 +36,42 @@
 }
 
 .voice-input-btn:disabled {
-    background: #ccc;
+    opacity: 0.5;
     cursor: not-allowed;
-    box-shadow: none;
 }
 
 /* 录音状态 */
 .voice-input-btn.recording {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    animation: recordingPulse 1.5s ease-in-out infinite;
+    background: #ff6b6b;
+    color: white;
+    animation: recording-pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes recordingPulse {
+@keyframes recording-pulse {
     0%, 100% {
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
     }
     50% {
-        box-shadow: 0 2px 20px rgba(239, 68, 68, 0.6), 0 0 0 8px rgba(239, 68, 68, 0.1);
+        box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
     }
 }
 
-/* Toast 提示 */
+/* 语音提示消息 */
 .voice-toast {
     position: fixed;
-    top: 80px;
+    top: 20px;
     left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 12px;
+    transform: translateX(-50%) translateY(-100px);
+    background: white;
+    color: #333;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     font-size: 14px;
+    font-weight: 500;
     z-index: 10000;
     opacity: 0;
-    transition: all 0.3s;
-    pointer-events: none;
-    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .voice-toast.show {
@@ -73,15 +79,78 @@
     transform: translateX(-50%) translateY(0);
 }
 
-.voice-toast.voice-toast-success {
-    background: rgba(16, 185, 129, 0.9);
+.voice-toast-success {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    color: white;
 }
 
-.voice-toast.voice-toast-error {
-    background: rgba(239, 68, 68, 0.9);
+.voice-toast-error {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    color: white;
 }
 
-.voice-toast.voice-toast-info {
-    background: rgba(59, 130, 246, 0.9);
+.voice-toast-info {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    color: white;
 }
 
+/* 麻瓜拼接操作按钮区域 */
+.muggle-action-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.muggle-generate-btn {
+    flex: 1;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.muggle-generate-btn i {
+    width: 20px;
+    height: 20px;
+}
+
+.muggle-generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.muggle-generate-btn:active {
+    transform: translateY(0);
+}
+
+.muggle-generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .voice-input-btn {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .voice-input-btn i {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .voice-toast {
+        max-width: 90%;
+        font-size: 13px;
+    }
+}
