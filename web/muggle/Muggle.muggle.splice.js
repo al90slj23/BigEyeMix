@@ -274,82 +274,8 @@ ${context.availableTransitions.map(t => `- ${t.name} (${t.type}): ${t.descriptio
         
     } catch (error) {
         console.error('DeepSeek API调用失败:', error);
-        
-        // 降级到本地智能模拟生成
-        return generateEnhancedMockInstructions(userDescription, context);
-    }
-}
-
-// 增强的本地模拟生成（当API不可用时）
-function generateEnhancedMockInstructions(userDescription, context) {
-    const tracks = context.tracks;
-    if (tracks.length === 0) return null;
-    
-    // 智能分析用户意图
-    const intent = analyzeUserIntent(userDescription);
-    
-    let instructions = `根据您的描述"${userDescription}"，我为您生成了以下拼接方案：\n\n`;
-    let estimatedDuration = 0;
-    
-    if (tracks.length >= 2) {
-        const track1 = tracks[0];
-        const track2 = tracks[1];
-        const clip1Duration = track1.clips[0].end - track1.clips[0].start;
-        const clip2Duration = track2.clips[0].end - track2.clips[0].start;
-        
-        instructions += `1. 使用 ${track1.label}1 片段 (${formatTime(track1.clips[0].start)} - ${formatTime(track1.clips[0].end)})\n`;
-        instructions += `2. 添加 ${intent.duration}秒 ${intent.name}\n`;
-        instructions += `3. 使用 ${track2.label}1 片段 (${formatTime(track2.clips[0].start)} - ${formatTime(track2.clips[0].end)})\n\n`;
-        
-        // 计算总时长
-        if (intent.type === 'crossfade' || intent.type === 'beatsync') {
-            estimatedDuration = clip1Duration + clip2Duration - intent.duration;
-        } else {
-            estimatedDuration = clip1Duration + clip2Duration + intent.duration;
-        }
-        
-        instructions += `最终效果: 两段音频通过${intent.name}连接，总时长约 ${formatTime(estimatedDuration)}`;
-    } else {
-        const track = tracks[0];
-        const clipDuration = track.clips[0].end - track.clips[0].start;
-        const midTime = (track.clips[0].start + track.clips[0].end) / 2;
-        
-        instructions += `1. 使用 ${track.label}1 片段的前半部分\n`;
-        instructions += `2. 添加 ${intent.duration}秒 ${intent.name}\n`;
-        instructions += `3. 使用 ${track.label}1 片段的后半部分\n\n`;
-        
-        estimatedDuration = clipDuration + intent.duration;
-        instructions += `最终效果: 单个音频文件中间插入${intent.name}`;
-    }
-    
-    return {
-        explanation: instructions,
-        instructions: [], // 这里可以添加具体的执行指令
-        success: true,
-        estimated_duration: estimatedDuration
-    };
-}
-
-// 分析用户意图，智能选择处理类型
-function analyzeUserIntent(userDescription) {
-    const desc = userDescription.toLowerCase();
-    
-    // 关键词映射和智能分析
-    if (desc.includes('平滑') || desc.includes('柔和') || desc.includes('淡化') || desc.includes('渐变')) {
-        return { type: 'crossfade', name: '淡化过渡', duration: 3 };
-    } else if (desc.includes('节拍') || desc.includes('同步') || desc.includes('对齐') || desc.includes('律动')) {
-        return { type: 'beatsync', name: '节拍过渡', duration: 2 };
-    } else if (desc.includes('魔法') || desc.includes('ai') || desc.includes('智能') || desc.includes('生成')) {
-        return { type: 'magicfill', name: '魔法填充', duration: 5 };
-    } else if (desc.includes('静音') || desc.includes('间隔') || desc.includes('暂停') || desc.includes('空白')) {
-        return { type: 'silence', name: '静音填充', duration: 2 };
-    } else if (desc.includes('快') || desc.includes('短')) {
-        return { type: 'crossfade', name: '淡化过渡', duration: 1 };
-    } else if (desc.includes('长') || desc.includes('慢')) {
-        return { type: 'magicfill', name: '魔法填充', duration: 8 };
-    } else {
-        // 默认使用淡化过渡
-        return { type: 'crossfade', name: '淡化过渡', duration: 3 };
+        // 直接抛出错误，不使用模拟响应
+        throw error;
     }
 }
 
