@@ -239,30 +239,51 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 示例1 - 去掉中间某段：
 用户："《知我》1分56～2分34这一段不要，剩下的部分《知我》＋《春颂》（整段）"
 正确理解：
-- 《知我》0~1:56（第一部分）
-- 《知我》2:34~结尾（第二部分）  
-- 《春颂》全部
+- A1片段：《知我》0~1:56
+- A2片段：《知我》2:34~结尾（AI需要查找A轨道的实际结束时间）
+- B1片段：《春颂》0~结尾（完整）
+- 拼接顺序：A1 + (3s 淡化过渡) + A2 + (3s 淡化过渡) + B1
+
 正确输出：
 {{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 01:56.00\n- A2片段：《知我》02:34.00 - 03:12.28（结尾）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + A2 + (3.0秒 淡化过渡) + B1\n\n最终效果：去掉《知我》中间38秒，保留前后部分，然后与《春颂》完整拼接，总时长约 04:58.88",
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 116}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
-    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 154, "customEnd": 192}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 154, "customEnd": 192.28}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "B", "clipId": "1"}}
-  ]
+  ],
+  "estimated_duration": 298.88
 }}
 
 示例2 - 完整拼接：
 用户："《知我》全部 + 《春颂》全部"
+正确理解：
+- A1片段：《知我》0~结尾（完整）
+- B1片段：《春颂》0~结尾（完整）
+- 拼接顺序：A1 + (3s 淡化过渡) + B1
+
 正确输出：
 {{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 03:12.28（完整）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + B1\n\n最终效果：两段音频完整拼接，总时长约 05:05.88",
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1"}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "B", "clipId": "1"}}
-  ]
+  ],
+  "estimated_duration": 305.88
 }}
+
+输出格式要求：
+1. explanation 必须包含三个部分：
+   - "片段定义："列出所有使用的片段（格式：轨道标签+片段ID，如A1、A2、B1）
+   - "拼接顺序："用 + 和括号清晰展示拼接逻辑
+   - "最终效果："说明总时长和效果
+2. 时间格式统一使用 mm:ss.cc（如 01:56.00）
+3. 片段命名规则：轨道标签(A/B/C...) + 片段ID(1/2/3...)
+4. 当同一轨道有多个片段时，使用不同的片段ID（A1、A2、A3...）
+5. 过渡类型要用中文名称（淡化过渡、节拍过渡、魔法填充、静音填充）
 
 请严格按照以下JSON格式返回：
 
