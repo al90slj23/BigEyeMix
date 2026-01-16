@@ -113,8 +113,10 @@ async def generate_muggle_splice(request: MuggleSpliceRequest):
             moonshot_key = settings.APIKEY_MacOS_Code_MoonShot
             
             if not deepseek_key and not moonshot_key:
-                logger.warning("未配置 AI API 密钥，使用模拟响应")
-                return generate_enhanced_mock_response(request)
+                raise HTTPException(
+                    status_code=500,
+                    detail="未配置 AI API 密钥。请在 .env 文件中配置 APIKEY_MacOS_Code_DeepSeek 或 APIKEY_MacOS_Code_MoonShot"
+                )
             
             # 选择 API
             if deepseek_key:
@@ -154,7 +156,10 @@ async def generate_muggle_splice(request: MuggleSpliceRequest):
                 if response.status_code != 200:
                     logger.error(f"AI API 调用失败: {response.status_code} - {response.text}")
                     if retry_count == max_retries - 1:
-                        return generate_enhanced_mock_response(request)
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"AI API 调用失败: {response.status_code} - {response.text}"
+                        )
                     continue
                 
                 result = response.json()
@@ -173,14 +178,20 @@ async def generate_muggle_splice(request: MuggleSpliceRequest):
                 else:
                     validation_errors.extend(parsed_result["errors"])
                     if retry_count == max_retries - 1:
-                        # 最后一次重试失败，返回增强的模拟响应
-                        return generate_enhanced_mock_response(request, validation_errors)
+                        # 最后一次重试失败，抛出错误
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"AI 响应验证失败: {'; '.join(validation_errors)}"
+                        )
                     
         except Exception as e:
             logger.error(f"麻瓜拼接生成失败 (重试 {retry_count + 1}): {str(e)}")
             validation_errors.append(f"API调用异常: {str(e)}")
             if retry_count == max_retries - 1:
-                return generate_enhanced_mock_response(request, validation_errors)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"麻瓜拼接生成失败: {str(e)}"
+                )
 
 def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, validation_errors: List[str]) -> str:
     """
@@ -622,115 +633,6 @@ def convert_to_legacy_format(instructions: List[Union[ClipInstruction, Transitio
         legacy_instructions.append(legacy_inst)
     
     return legacy_instructions
-def generate_enhanced_mock_response(request: MuggleSpliceRequest, validation_errors: Optional[List[str]] = None) -> MuggleSpliceResponse:
-    """
-    生成增强的模拟响应（当 AI API 不可用时）
-    """
-    context = request.context
-    tracks = context.get("tracks", [])
-    user_desc = request.user_description
-    
-    if not tracks:
-        return MuggleSpliceResponse(
-            explanation="没有可用的音频文件，请先上传音频。",
-            success=False,
-            validation_errors=["没有可用的音频轨道"]
-        )
-    
-    # 生成智能拼接方案
-    explanation = f'根据您的描述"{user_desc}"，我为您生成了以下拼接方案：\n\n'
-    instructions = []
-    
-    if len(tracks) >= 2:
-        # 多轨道拼接方案
-        track1 = tracks[0]
-        track2 = tracks[1]
-        clip1 = track1["clips"][0] if track1["clips"] else None
-        clip2 = track2["clips"][0] if track2["clips"] else None
-        
-        if clip1 and clip2:
-            # 分析用户描述选择合适的过渡类型
-            transition_type = analyze_user_intent(user_desc)
-            transition_duration = 3.0
-            
-            explanation += f'1. 使用 {track1["label"]}1 片段 ({format_time(clip1["start"])} - {format_time(clip1["end"])})\n'
-            explanation += f'2. 添加 {transition_duration}秒 {get_transition_name(transition_type)}\n'
-            explanation += f'3. 使用 {track2["label"]}1 片段 ({format_time(clip2["start"])} - {format_time(clip2["end"])})\n\n'
-            
-            # 计算总时长
-            if transition_type in ["crossfade", "beatsync"]:
-                total_duration = clip1["duration"] + clip2["duration"] - transition_duration
-            else:
-                total_duration = clip1["duration"] + clip2["duration"] + transition_duration
-            
-            explanation += f'最终效果: 两段音频通过{get_transition_name(transition_type)}连接，总时长约 {format_time(total_duration)}'
-            
-            instructions = [
-                {"type": "clip", "trackId": track1["id"], "clipId": clip1["id"]},
-                {"type": "transition", "transitionType": transition_type, "duration": transition_duration},
-                {"type": "clip", "trackId": track2["id"], "clipId": clip2["id"]}
-            ]
-        else:
-            explanation += "音频片段信息不完整，请检查上传的文件。"
-            instructions = []
-    else:
-        # 单轨道拼接方案
-        track = tracks[0]
-        clip = track["clips"][0] if track["clips"] else None
-        
-        if clip:
-            mid_time = (clip["start"] + clip["end"]) / 2
-            explanation += f'1. 使用 {track["label"]}1 片段的前半部分 ({format_time(clip["start"])} - {format_time(mid_time)})\n'
-            explanation += f'2. 添加 2秒 静音填充\n'
-            explanation += f'3. 使用 {track["label"]}1 片段的后半部分 ({format_time(mid_time)} - {format_time(clip["end"])})\n\n'
-            explanation += f'最终效果: 单个音频文件中间插入静音间隔'
-            
-            instructions = [
-                {"type": "clip", "trackId": track["id"], "clipId": clip["id"], "customStart": clip["start"], "customEnd": mid_time},
-                {"type": "transition", "transitionType": "silence", "duration": 2},
-                {"type": "clip", "trackId": track["id"], "clipId": clip["id"], "customStart": mid_time, "customEnd": clip["end"]}
-            ]
-        else:
-            explanation += "音频片段信息不完整，请检查上传的文件。"
-            instructions = []
-    
-    return MuggleSpliceResponse(
-        explanation=explanation,
-        instructions=instructions,
-        success=True,
-        validation_errors=validation_errors
-    )
-
-def analyze_user_intent(user_description: str) -> str:
-    """
-    分析用户描述，智能选择合适的过渡类型
-    """
-    desc_lower = user_description.lower()
-    
-    # 关键词映射
-    if any(word in desc_lower for word in ["平滑", "柔和", "淡化", "渐变", "smooth", "fade"]):
-        return "crossfade"
-    elif any(word in desc_lower for word in ["节拍", "同步", "对齐", "beat", "sync", "rhythm"]):
-        return "beatsync"
-    elif any(word in desc_lower for word in ["魔法", "ai", "智能", "生成", "magic", "intelligent"]):
-        return "magicfill"
-    elif any(word in desc_lower for word in ["静音", "间隔", "暂停", "silence", "pause", "gap"]):
-        return "silence"
-    else:
-        # 默认使用淡化过渡
-        return "crossfade"
-
-def get_transition_name(transition_type: str) -> str:
-    """
-    获取过渡类型的中文名称
-    """
-    names = {
-        "crossfade": "淡化过渡",
-        "beatsync": "节拍过渡", 
-        "magicfill": "魔法填充",
-        "silence": "静音填充"
-    }
-    return names.get(transition_type, "淡化过渡")
 
 def parse_ai_instructions(ai_response: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
