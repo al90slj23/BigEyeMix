@@ -96,19 +96,19 @@ function renderEditorAndTimeline() {
                             <i data-lucide="message-circle"></i>
                             请大眼怪描述你想要的拼接效果
                         </div>
-                        <div class="muggle-input-wrapper">
-                            <textarea 
-                                id="muggleSpliceInput" 
-                                class="muggle-input" 
-                                placeholder="例如：知我 1分56到2分34 不要，剩下的部分加上春颂整段..."
-                                rows="4"></textarea>
+                        <textarea 
+                            id="muggleSpliceInput" 
+                            class="muggle-input" 
+                            placeholder="例如：知我 1分56到2分34 不要，剩下的部分加上春颂整段..."
+                            rows="4"></textarea>
+                        <div class="muggle-action-buttons">
                             <button class="voice-input-btn" id="voiceInputBtn" title="语音输入">
                                 <i data-lucide="mic"></i>
                             </button>
+                            <button class="muggle-generate-btn" id="muggleGenerateBtn">
+                                <i data-lucide="sparkles"></i> 点击理解拼接方案
+                            </button>
                         </div>
-                        <button class="muggle-generate-btn" id="muggleGenerateBtn">
-                            <i data-lucide="sparkles"></i> 生成拼接方案
-                        </button>
                     </div>
                     <div class="muggle-result-area" id="muggleResultArea" style="display:none;">
                         <div class="muggle-result-header">

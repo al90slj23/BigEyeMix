@@ -85,13 +85,3 @@
     background: rgba(59, 130, 246, 0.9);
 }
 
-/* 麻瓜拼接输入区域布局 */
-.muggle-input-wrapper {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-}
-
-.muggle-input-wrapper textarea {
-    flex: 1;
-}
