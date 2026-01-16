@@ -242,9 +242,10 @@ ${context.availableTransitions.map(t => `- ${t.name} (${t.type}): ${t.descriptio
    - crossfade/beatsync：音量过渡效果，前段结尾淡出+后段开头淡入，**不占用额外时间**
    - magicfill/silence：硬填充，**会增加总时长**
 7. **【重要】总时长计算公式**：
-   - 总时长 = 所有clip的时长之和 + magicfill时长 + silence时长
-   - crossfade和beatsync不计入总时长
-   - 例如：20秒clip + 4秒crossfade + 15秒clip = 35秒（不是39秒）
+   - **总时长 = 所有clip的时长之和 + magicfill时长 + silence时长**
+   - **crossfade和beatsync不影响总时长（既不增加也不减少）**
+   - 例如：20秒clip + 4秒crossfade + 15秒clip = 20 + 15 = 35秒（不是31秒，也不是39秒）
+   - 例如：20秒clip + 4秒magicfill + 15秒clip = 20 + 4 + 15 = 39秒
 
 只返回JSON，不要添加其他说明文字。`;
 
