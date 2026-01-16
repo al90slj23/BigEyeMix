@@ -95,13 +95,12 @@ class TencentASRService:
             
             # 构建请求
             req = self.models.SentenceRecognitionRequest()
-            req.EngineModelType = "16k_zh"  # 16k 中文通用模型
-            req.ChannelNum = 1
-            req.ResTextFormat = 0  # 0: 基础识别结果
+            req.EngSerViceType = "16k_zh"  # 16k 中文通用模型
             req.SourceType = 1  # 1: 音频数据
+            req.VoiceFormat = voice_format
             req.Data = audio_base64
             req.DataLen = len(audio_data)
-            req.VoiceFormat = voice_format
+            req.SubServiceType = 2  # 2: 一句话识别
             
             logger.info(f"发送识别请求: 格式={audio_format}, 大小={len(audio_data)} bytes")
             
