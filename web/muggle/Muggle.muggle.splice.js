@@ -367,6 +367,17 @@ async function applyMuggleSpliceResult(result) {
         throw new Error('没有可执行的拼接指令');
     }
     
+    // 确保编辑器已渲染（如果还在第1步，需要先渲染编辑器）
+    const previewSection = document.getElementById('previewSection');
+    if (!previewSection) {
+        console.log('[Muggle Splice] Editor not rendered, rendering now...');
+        if (typeof renderEditorAndTimeline === 'function') {
+            renderEditorAndTimeline();
+            // 等待 DOM 更新
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+    
     // 解析并应用每条指令
     for (const instruction of result.instructions) {
         if (instruction.type === 'clip') {
@@ -436,9 +447,13 @@ async function applyMuggleSpliceResult(result) {
         }
     }
     
-    // 重新渲染时间轴
-    renderTimeline();
-    updateTotalDuration();
+    // 重新渲染时间轴（如果在手动拼接标签页）
+    if (typeof renderTimeline === 'function') {
+        renderTimeline();
+    }
+    if (typeof updateTotalDuration === 'function') {
+        updateTotalDuration();
+    }
     
     // 生成预览
     if (state.timeline.length > 0) {
