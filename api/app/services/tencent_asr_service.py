@@ -77,6 +77,34 @@ class TencentASRService:
             }
         
         try:
+            # 如果是 webm/ogg 格式，先转换为 wav
+            if audio_format.lower() in ['webm', 'ogg']:
+                logger.info(f"转换 {audio_format} 格式到 wav")
+                try:
+                    from pydub import AudioSegment
+                    import io
+                    
+                    # 读取音频
+                    audio = AudioSegment.from_file(io.BytesIO(audio_data), format=audio_format.lower())
+                    
+                    # 转换为 16kHz 单声道 WAV
+                    audio = audio.set_frame_rate(16000).set_channels(1)
+                    
+                    # 导出为 WAV
+                    wav_io = io.BytesIO()
+                    audio.export(wav_io, format='wav')
+                    audio_data = wav_io.getvalue()
+                    audio_format = 'wav'
+                    
+                    logger.info(f"音频转换成功，新大小: {len(audio_data)} bytes")
+                except Exception as e:
+                    logger.error(f"音频格式转换失败: {e}")
+                    return {
+                        'success': False,
+                        'error': f'音频格式转换失败: {str(e)}',
+                        'text': ''
+                    }
+            
             # 将音频转为 base64
             audio_base64 = base64.b64encode(audio_data).decode('utf-8')
             
@@ -87,9 +115,7 @@ class TencentASRService:
                 'm4a': 'm4a',
                 'flac': 'flac',
                 'opus': 'opus',
-                'amr': 'amr',
-                'webm': 'wav',  # webm 当作 wav 处理
-                'ogg': 'wav'    # ogg 当作 wav 处理
+                'amr': 'amr'
             }
             voice_format_str = format_map.get(audio_format.lower(), 'wav')
             
