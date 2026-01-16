@@ -224,17 +224,22 @@ class PreviewPlayer {
                     const offset = fromTime > item.accumulatedStart ? fromTime - item.accumulatedStart : 0;
                     const duration = item.duration - offset;
                     
-                    source.start(scheduleTime, offset, duration);
+                    // 计算实际的调度时间（相对于 audioContext.currentTime）
+                    const actualScheduleTime = this.audioContext.currentTime + (item.accumulatedStart - fromTime) + offset;
+                    
+                    source.start(actualScheduleTime, offset, duration);
                     this.currentSources.push(source);
                     
-                    scheduleTime += duration;
-                    console.log(`[Player] Scheduled clip ${item.file_id} at ${scheduleTime - duration}s, duration ${duration}s`);
+                    console.log(`[Player] Scheduled clip ${item.file_id} at ${actualScheduleTime}s (accumulated: ${item.accumulatedStart}s), duration ${duration}s`);
                 }
             } else if (item.type === 'crossfade') {
                 const prevBuffer = await this.loadAudioBuffer(item.prevFileId, item.prevStart, item.prevEnd);
                 const nextBuffer = await this.loadAudioBuffer(item.nextFileId, item.nextStart, item.nextEnd);
                 
                 if (prevBuffer && nextBuffer) {
+                    // 计算实际的调度时间
+                    const actualScheduleTime = this.audioContext.currentTime + (item.accumulatedStart - fromTime);
+                    
                     // 创建淡出效果
                     const prevSource = this.audioContext.createBufferSource();
                     prevSource.buffer = prevBuffer;
@@ -243,8 +248,8 @@ class PreviewPlayer {
                     prevGain.connect(this.audioContext.destination);
                     
                     // 淡出：从 1 到 0
-                    prevGain.gain.setValueAtTime(1, scheduleTime);
-                    prevGain.gain.linearRampToValueAtTime(0, scheduleTime + item.duration);
+                    prevGain.gain.setValueAtTime(1, actualScheduleTime);
+                    prevGain.gain.linearRampToValueAtTime(0, actualScheduleTime + item.duration);
                     
                     // 创建淡入效果
                     const nextSource = this.audioContext.createBufferSource();
@@ -254,22 +259,20 @@ class PreviewPlayer {
                     nextGain.connect(this.audioContext.destination);
                     
                     // 淡入：从 0 到 1
-                    nextGain.gain.setValueAtTime(0, scheduleTime);
-                    nextGain.gain.linearRampToValueAtTime(1, scheduleTime + item.duration);
+                    nextGain.gain.setValueAtTime(0, actualScheduleTime);
+                    nextGain.gain.linearRampToValueAtTime(1, actualScheduleTime + item.duration);
                     
                     // 同时开始播放
-                    prevSource.start(scheduleTime);
-                    nextSource.start(scheduleTime);
+                    prevSource.start(actualScheduleTime);
+                    nextSource.start(actualScheduleTime);
                     
                     this.currentSources.push(prevSource, nextSource);
                     
-                    scheduleTime += item.duration;
-                    console.log(`[Player] Scheduled ${item.transitionType} at ${scheduleTime - item.duration}s, duration ${item.duration}s`);
+                    console.log(`[Player] Scheduled ${item.transitionType} at ${actualScheduleTime}s (accumulated: ${item.accumulatedStart}s), duration ${item.duration}s`);
                 }
             } else if (item.type === 'silence') {
-                // 静音：不播放，只增加时间
-                scheduleTime += item.duration;
-                console.log(`[Player] Silence ${item.duration}s`);
+                // 静音：不需要调度，只是占位
+                console.log(`[Player] Silence at ${item.accumulatedStart}s, duration ${item.duration}s`);
             }
         }
         
