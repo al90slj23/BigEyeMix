@@ -627,10 +627,25 @@ def validate_semantic_logic(response: StructuredAIResponse, context: Dict[str, A
     
     for instruction in response.instructions:
         if instruction.type == "clip":
-            # 查找片段实际时长（支持通过 ID 或 label 查找）
-            track = next((t for t in tracks if t["id"] == instruction.trackId or t["label"] == instruction.trackId), None)
+            # 查找片段实际时长（支持通过 ID 或 label 查找，支持数字和字符串）
+            track = None
+            for t in tracks:
+                if (t["id"] == instruction.trackId or 
+                    t["label"] == instruction.trackId or
+                    str(t["id"]) == str(instruction.trackId) or
+                    t["label"] == str(instruction.trackId)):
+                    track = t
+                    break
+            
             if track:
-                clip = next((c for c in track.get("clips", []) if c["id"] == instruction.clipId), None)
+                # 查找 clip，支持数字和字符串类型的 clipId
+                clip = None
+                for c in track.get("clips", []):
+                    if (c["id"] == instruction.clipId or 
+                        str(c["id"]) == str(instruction.clipId)):
+                        clip = c
+                        break
+                
                 if clip:
                     if instruction.customStart is not None and instruction.customEnd is not None:
                         total_clip_duration += instruction.customEnd - instruction.customStart
