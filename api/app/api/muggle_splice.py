@@ -560,17 +560,20 @@ def validate_semantic_logic(response: StructuredAIResponse, context: Dict[str, A
     """
     errors = []
     tracks = context.get("tracks", [])
+    # 同时支持 ID 和 label 作为轨道标识
     track_ids = {track["id"] for track in tracks}
+    track_labels = {track["label"] for track in tracks}
+    valid_track_identifiers = track_ids | track_labels
     
     # 验证轨道和片段引用的有效性
     for instruction in response.instructions:
         if instruction.type == "clip":
-            if instruction.trackId not in track_ids:
+            if instruction.trackId not in valid_track_identifiers:
                 errors.append(f"引用了不存在的轨道ID: {instruction.trackId}")
                 continue
             
-            # 查找对应轨道
-            track = next((t for t in tracks if t["id"] == instruction.trackId), None)
+            # 查找对应轨道（支持通过 ID 或 label 查找）
+            track = next((t for t in tracks if t["id"] == instruction.trackId or t["label"] == instruction.trackId), None)
             if track:
                 clip_ids = {clip["id"] for clip in track.get("clips", [])}
                 if instruction.clipId not in clip_ids:
@@ -583,8 +586,8 @@ def validate_semantic_logic(response: StructuredAIResponse, context: Dict[str, A
     
     for instruction in response.instructions:
         if instruction.type == "clip":
-            # 查找片段实际时长
-            track = next((t for t in tracks if t["id"] == instruction.trackId), None)
+            # 查找片段实际时长（支持通过 ID 或 label 查找）
+            track = next((t for t in tracks if t["id"] == instruction.trackId or t["label"] == instruction.trackId), None)
             if track:
                 clip = next((c for c in track.get("clips", []) if c["id"] == instruction.clipId), None)
                 if clip:

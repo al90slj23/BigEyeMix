@@ -395,8 +395,8 @@ async function applyMuggleSpliceResult(result) {
     // 解析并应用每条指令
     for (const instruction of result.instructions) {
         if (instruction.type === 'clip') {
-            // 查找对应的轨道和片段
-            const track = state.tracks.find(t => t.id === instruction.trackId);
+            // 查找对应的轨道和片段（支持通过 ID 或 label 查找）
+            const track = state.tracks.find(t => t.id === instruction.trackId || t.label === instruction.trackId);
             if (!track) {
                 console.warn(`未找到轨道: ${instruction.trackId}`);
                 continue;
@@ -408,10 +408,10 @@ async function applyMuggleSpliceResult(result) {
                 continue;
             }
             
-            // 构建时间轴项
+            // 构建时间轴项（使用实际的数字 ID，而不是 label）
             const timelineItem = {
                 type: 'clip',
-                trackId: instruction.trackId,
+                trackId: track.id,  // 使用实际的数字 ID
                 clipId: instruction.clipId
             };
             
