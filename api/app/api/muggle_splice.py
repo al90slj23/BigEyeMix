@@ -204,12 +204,24 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     # 构建轨道信息
     tracks_info = ""
     for track in tracks:
+        # 轨道基本信息
+        track_duration = track.get('duration', 0)
+        tracks_info += f"轨道 {track['label']} - {track.get('name', '未知文件')}\n"
+        tracks_info += f"  总时长: {format_time(track_duration)} ({track_duration:.2f}秒)\n"
+        
+        # 片段信息
         clips_info = []
         for clip in track.get("clips", []):
-            clips_info.append(f"  - {track['label']}{clip['id']}: {format_time(clip['start'])} - {format_time(clip['end'])} (时长 {format_time(clip['duration'])})")
+            clip_duration = clip.get('duration', clip['end'] - clip['start'])
+            clips_info.append(
+                f"  - 片段{track['label']}{clip['id']}: "
+                f"{format_time(clip['start'])} - {format_time(clip['end'])} "
+                f"(时长 {format_time(clip_duration)} = {clip_duration:.2f}秒)"
+            )
         
-        tracks_info += f"轨道 {track['label']} ({track.get('name', '未知文件')}):\n"
-        tracks_info += "\n".join(clips_info) + "\n\n"
+        if clips_info:
+            tracks_info += "\n".join(clips_info) + "\n"
+        tracks_info += "\n"
     
     # 重试时的错误反馈
     retry_feedback = ""
@@ -264,18 +276,27 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 4. 时长必须为正数且合理（≤30秒）
 5. 必须包含至少一个clip指令
 
-6. **当用户说"分成N份"时，必须将音频分割成N个片段：**
+6. **⚠️ 时长计算规则（极其重要）：**
+   - estimated_duration 必须精确计算，不能估算
+   - 计算公式：所有clip的实际时长之和 + 所有transition的时长 - overlap时长
+   - crossfade和beatsync会减少总时长（overlap = transition.duration）
+   - magicfill和silence会增加总时长（不overlap）
+   - 例如：A1(60s) + crossfade(3s) + B1(50s) = 60 + 50 - 3 = 107s
+   - 例如：A1(60s) + magicfill(5s) + B1(50s) = 60 + 5 + 50 = 115s
+   - 使用customStart和customEnd时，时长 = customEnd - customStart
+
+7. **当用户说"分成N份"时，必须将音频分割成N个片段：**
    - 计算每份的时长：总时长 / N
    - 为每份创建独立的clip指令，使用customStart和customEnd
    - 例如：A1总时长180s，分成3份 → A1a(0~60s), A1b(60~120s), A1c(120~180s)
    - 注意：这是3个独立的clip指令，不是1个完整的clip
 
-7. **当用户说"去掉某段"或"不要某段"时，需要将该音频拆分成两个clip指令：**
+8. **当用户说"去掉某段"或"不要某段"时，需要将该音频拆分成两个clip指令：**
    - 第一个clip：从开始到去掉部分的开始时间（使用customStart和customEnd）
    - 第二个clip：从去掉部分的结束时间到音频结尾（使用customStart和customEnd）
    - 例如：去掉1:56~2:34，则生成两个clip：0~1:56 和 2:34~结尾
 
-8. **当用户说"摆开"、"交替"、"穿插"、"间隔"时，必须生成交替的指令序列：**
+9. **当用户说"摆开"、"交替"、"穿插"、"间隔"时，必须生成交替的指令序列：**
    - 不是简单的 A + B 拼接
    - 而是 A1 + B1 + A2 + B2 + A3 的交替模式
    - 在每个clip之间添加transition指令
