@@ -275,6 +275,52 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
   "estimated_duration": 305.88
 }}
 
+示例3 - 分段插入（重要）：
+用户："把第一段音频分成1分钟、1分钟、1分钟这样的间隔，然后在每个中间都加入第二段音频"
+正确理解：
+- 将A1分成多个1分钟片段：A1a(0~60s), A1b(60~120s), A1c(120~180s)
+- 在每个A片段之间插入完整的B1
+- 拼接顺序：A1a + B1 + A1b + B1 + A1c
+
+正确输出：
+{{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:00.00\n- A1b片段：《知我》01:00.00 - 02:00.00\n- A1c片段：《知我》02:00.00 - 03:00.00\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1 + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1 + (3.0秒 淡化过渡) + A1c\n\n最终效果：将《知我》分成3个1分钟片段，在每个片段之间插入《春颂》完整音频，总时长约 06:45.20",
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 60}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1"}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 60, "customEnd": 120}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1"}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 120, "customEnd": 180}}
+  ],
+  "estimated_duration": 405.2
+}}
+
+示例4 - 分段插入（静音间隔）：
+用户："把第一段音频每隔30秒加入2秒静音"
+正确理解：
+- 将A1分成多个30秒片段
+- 在每个片段之间插入2秒静音
+- 拼接顺序：A1a(0~30s) + 2s静音 + A1b(30~60s) + 2s静音 + A1c(60~90s) + ...
+
+正确输出：
+{{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 00:30.00\n- A1b片段：《知我》00:30.00 - 01:00.00\n- A1c片段：《知我》01:00.00 - 01:30.00\n- A1d片段：《知我》01:30.00 - 02:00.00\n\n拼接顺序：\nA1a + (2.0秒 静音填充) + A1b + (2.0秒 静音填充) + A1c + (2.0秒 静音填充) + A1d\n\n最终效果：将《知我》每隔30秒插入2秒静音，总时长约 02:06.00",
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 30}},
+    {{"type": "transition", "transitionType": "silence", "duration": 2}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 30, "customEnd": 60}},
+    {{"type": "transition", "transitionType": "silence", "duration": 2}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 60, "customEnd": 90}},
+    {{"type": "transition", "transitionType": "silence", "duration": 2}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 90, "customEnd": 120}}
+  ],
+  "estimated_duration": 126
+}}
+
 输出格式要求：
 1. explanation 必须包含三个部分：
    - "片段定义："列出所有使用的片段（格式：轨道标签+片段ID，如A1、A2、B1）
