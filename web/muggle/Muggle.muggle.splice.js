@@ -353,7 +353,15 @@ async function handleMuggleApply() {
             refreshIcons();
         }
         
-        alert('应用失败: ' + error.message);
+        // 显示错误提示
+        const resultContent = document.getElementById('muggleResultContent');
+        if (resultContent) {
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'error-message';
+            errorMsg.innerHTML = `<i data-lucide="alert-circle"></i> 应用失败: ${error.message}`;
+            resultContent.appendChild(errorMsg);
+            refreshIcons();
+        }
     }
 }
 
@@ -388,9 +396,14 @@ async function applyMuggleSpliceResult(result) {
                 continue;
             }
             
-            const clip = track.clips.find(c => c.id === instruction.clipId);
+            // 查找 clip，支持数字和字符串类型的 clipId
+            const clip = track.clips.find(c => 
+                c.id === instruction.clipId || 
+                c.id === parseInt(instruction.clipId) ||
+                String(c.id) === String(instruction.clipId)
+            );
             if (!clip) {
-                console.warn(`未找到片段: ${instruction.trackId}${instruction.clipId}`);
+                console.warn(`未找到片段: ${instruction.trackId}${instruction.clipId}`, 'track.clips:', track.clips);
                 continue;
             }
             
@@ -398,7 +411,7 @@ async function applyMuggleSpliceResult(result) {
             const timelineItem = {
                 type: 'clip',
                 trackId: track.id,  // 使用实际的数字 ID
-                clipId: instruction.clipId
+                clipId: clip.id     // 使用实际找到的 clip.id
             };
             
             // 如果有自定义时间范围，添加到时间轴项

@@ -257,6 +257,25 @@
     height: 16px;
 }
 
+/* Error message */
+.error-message {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #dc2626;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+.error-message i {
+    width: 16px;
+    height: 16px;
+}
+
 @keyframes slideIn {
     from {
         opacity: 0;
