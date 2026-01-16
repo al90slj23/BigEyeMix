@@ -85,30 +85,30 @@ class TimelineManager {
                 const duration = item.duration;
                 
                 if (transType === 'crossfade' || transType === 'beatsync') {
-                    // Crossfade: 淡入淡出效果，不改变总时长
-                    // 实现方式：回退时间，让下一个片段与前一个片段重叠播放
+                    // Crossfade: 淡入淡出效果，仅作为音量控制标记
+                    // 不改变时间线长度，前后片段完整播放
+                    // 只在播放时应用音量渐变效果
                     
                     if (item.transitionData && item.transitionData.prevFileId && item.transitionData.nextFileId) {
                         // 有完整的前后信息
                         const data = item.transitionData;
                         
-                        // 回退时间，创建重叠区域
-                        currentTime -= duration;
-                        
-                        // Crossfade 标记（用于 UI 显示）
+                        // Crossfade 标记（用于 UI 显示和播放器音量控制）
+                        // 不占用时间线空间，只是一个效果标记
                         const computedItem = {
                             ...item,
-                            accumulatedStart: currentTime,  // 重叠区域的起始时间
-                            accumulatedEnd: currentTime + duration,  // 重叠区域的结束时间
-                            actualDuration: duration,
-                            isCrossfadeMarker: true  // 标记这是一个 crossfade 效果
+                            accumulatedStart: currentTime,  // 标记位置（在两个片段之间）
+                            accumulatedEnd: currentTime,    // 不占用时长
+                            actualDuration: 0,              // 不占用时长
+                            isCrossfadeMarker: true,        // 标记这是一个 crossfade 效果
+                            crossfadeDuration: duration     // 保存 crossfade 时长用于播放器
                         };
                         this.computedTimeline.push(computedItem);
                         
-                        this.log(`[TimelineManager] ${transType} ${i}: ${duration}s overlap at ${currentTime}s - next clip will start at ${currentTime}s (overlap with previous)`);
+                        this.log(`[TimelineManager] ${transType} ${i}: ${duration}s fade effect at ${currentTime}s (no timeline duration change)`);
                         
                         // Crossfade 不添加独立的播放片段
-                        // 下一个 clip 会从 currentTime 开始，与前一个 clip 的最后部分重叠
+                        // 播放器会在播放前后片段时自动应用音量渐变
                         
                     } else {
                         // 没有完整信息，暂时不处理
@@ -124,6 +124,8 @@ class TimelineManager {
                         
                         this.log(`[TimelineManager] ${transType} ${i} (incomplete): waiting for data`);
                     }
+                    
+                    // Crossfade 不改变 currentTime
                     
                 } else if (transType === 'magicfill') {
                     // 魔法填充：增加时长
