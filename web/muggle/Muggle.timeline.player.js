@@ -92,13 +92,14 @@ class PreviewPlayer {
         this.stopAllSources();
         
         this.isPlaying = true;
-        this.startTime = this.audioContext.currentTime - fromTime;
+        // 记录播放开始时的 AudioContext 时间，用于计算当前播放位置
+        const playbackStartTime = this.audioContext.currentTime;
+        this.startTime = playbackStartTime - fromTime;
         
         if (this.onPlayStateChange) {
             this.onPlayStateChange(true);
         }
         
-        let scheduleTime = this.audioContext.currentTime;
         let accumulatedTime = 0;
         
         console.log(`[Player] Starting playback from ${fromTime}s, total duration: ${this.totalDuration}s`);
@@ -224,9 +225,9 @@ class PreviewPlayer {
                     const offset = fromTime > item.accumulatedStart ? fromTime - item.accumulatedStart : 0;
                     const duration = item.duration - offset;
                     
-                    // 计算实际的调度时间：当前时间 + 该片段相对于播放起点的延迟
+                    // 计算实际的调度时间：播放开始时间 + 该片段相对于播放起点的延迟
                     const delayFromStart = Math.max(0, item.accumulatedStart - fromTime);
-                    const actualScheduleTime = this.audioContext.currentTime + delayFromStart;
+                    const actualScheduleTime = playbackStartTime + delayFromStart;
                     
                     source.start(actualScheduleTime, offset, duration);
                     this.currentSources.push(source);
@@ -238,9 +239,9 @@ class PreviewPlayer {
                 const nextBuffer = await this.loadAudioBuffer(item.nextFileId, item.nextStart, item.nextEnd);
                 
                 if (prevBuffer && nextBuffer) {
-                    // 计算实际的调度时间：当前时间 + 该过渡相对于播放起点的延迟
+                    // 计算实际的调度时间：播放开始时间 + 该过渡相对于播放起点的延迟
                     const delayFromStart = Math.max(0, item.accumulatedStart - fromTime);
-                    const actualScheduleTime = this.audioContext.currentTime + delayFromStart;
+                    const actualScheduleTime = playbackStartTime + delayFromStart;
                     
                     // 创建淡出效果
                     const prevSource = this.audioContext.createBufferSource();
