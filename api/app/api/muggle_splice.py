@@ -660,8 +660,10 @@ def validate_semantic_logic(response: StructuredAIResponse, context: Dict[str, A
     expected_duration = total_clip_duration + total_transition_duration - overlap_duration
     duration_diff = abs(response.estimated_duration - expected_duration)
     
-    if duration_diff > 5:  # 允许5秒误差
-        errors.append(f"预估时长 {response.estimated_duration:.1f}s 与计算时长 {expected_duration:.1f}s 差异过大")
+    # 允许10秒误差或10%的相对误差（取较大值）
+    allowed_error = max(10, expected_duration * 0.1)
+    if duration_diff > allowed_error:
+        errors.append(f"预估时长 {response.estimated_duration:.1f}s 与计算时长 {expected_duration:.1f}s 差异过大（差异 {duration_diff:.1f}s，允许 {allowed_error:.1f}s）")
     
     return errors
 
