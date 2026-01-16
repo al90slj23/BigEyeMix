@@ -94,13 +94,13 @@ function renderEditorAndTimeline() {
                     <div class="muggle-input-area">
                         <div class="muggle-input-label">
                             <i data-lucide="message-circle"></i>
-                            描述你想要的拼接效果
+                            请大眼怪描述你想要的拼接效果
                         </div>
                         <div class="muggle-input-wrapper">
                             <textarea 
                                 id="muggleSpliceInput" 
                                 class="muggle-input" 
-                                placeholder="例如：我要第一个文件的前30秒，然后用淡化过渡连接第二个文件的中间部分，最后加上第一个文件的结尾..."
+                                placeholder="例如：知我 1分56到2分34 不要，剩下的部分加上春颂整段..."
                                 rows="4"></textarea>
                             <button class="voice-input-btn" id="voiceInputBtn" title="语音输入">
                                 <i data-lucide="mic"></i>
@@ -113,7 +113,7 @@ function renderEditorAndTimeline() {
                     <div class="muggle-result-area" id="muggleResultArea" style="display:none;">
                         <div class="muggle-result-header">
                             <i data-lucide="check-circle"></i>
-                            AI 理解的拼接方案
+                            请确认大眼怪想要表达的拼接方案
                         </div>
                         <div class="muggle-result-content" id="muggleResultContent"></div>
                         <div class="muggle-result-actions">
