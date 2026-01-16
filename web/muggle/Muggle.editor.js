@@ -115,8 +115,23 @@ function renderEditorAndTimeline() {
                         <div class="muggle-result-header">
                             <i data-lucide="check-circle"></i>
                             请确认大眼怪想要表达的拼接方案
+                            <button class="json-info-btn" id="muggleJsonInfoBtn" title="查看机器指令">
+                                <i data-lucide="help-circle"></i>
+                            </button>
                         </div>
                         <div class="muggle-result-content" id="muggleResultContent"></div>
+                        <div class="muggle-json-modal" id="muggleJsonModal" style="display: none;">
+                            <div class="json-modal-overlay" id="muggleJsonModalOverlay"></div>
+                            <div class="json-modal-content">
+                                <div class="json-modal-header">
+                                    <h3>机器使用的拼接指令（JSON）</h3>
+                                    <button class="json-modal-close" id="muggleJsonModalClose">
+                                        <i data-lucide="x"></i>
+                                    </button>
+                                </div>
+                                <pre class="json-modal-body" id="muggleJsonModalBody"></pre>
+                            </div>
+                        </div>
                         <div class="muggle-result-actions">
                             <button class="btn-apply" id="muggleApplyBtn">
                                 <i data-lucide="play"></i> 应用方案

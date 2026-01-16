@@ -229,19 +229,39 @@ ${context.availableTransitions.map(t => `- ${t.name} (${t.type}): ${t.descriptio
 }
 \`\`\`
 
-重要规则：
+【关键规则 - 必须严格遵守】：
 1. 必须返回有效的JSON格式
 2. 指令序列必须以clip开始
 3. 不能有连续的transition指令
 4. 处理时长必须为正数且≤30秒
-5. **只处理用户明确要求的部分，不要自动添加音频的剩余部分**
-6. **crossfade和beatsync是音量过渡效果（前段结尾淡出+后段开头淡入），不改变总时长**
-7. **magicfill和silence是硬填充，会增加总时长**
-8. 总时长计算：所有clip时长之和 + magicfill/silence时长之和（crossfade/beatsync不计入）
+5. **【重要】只生成用户明确要求的片段，绝对不要自动添加音频的剩余部分**
+   - 例如：用户说"第二首的最后20秒 + 第一首的前15秒"，就只生成这两个片段
+   - 不要添加"第二首的剩余部分"或"第一首的剩余部分"
+   - 用户没有提到的部分，一律不要添加
+6. **【重要】过渡类型的时长计算规则**：
+   - crossfade/beatsync：音量过渡效果，前段结尾淡出+后段开头淡入，**不占用额外时间**
+   - magicfill/silence：硬填充，**会增加总时长**
+7. **【重要】总时长计算公式**：
+   - 总时长 = 所有clip的时长之和 + magicfill时长 + silence时长
+   - crossfade和beatsync不计入总时长
+   - 例如：20秒clip + 4秒crossfade + 15秒clip = 35秒（不是39秒）
 
 只返回JSON，不要添加其他说明文字。`;
 
-    const systemPrompt = `你是专业的音频拼接专家，擅长理解用户的自然语言描述并转换为结构化的音频拼接指令。你必须严格按照JSON格式返回结果，确保所有指令都是可执行的。重要：只处理用户明确要求的部分，不要自作主张添加额外内容。`;
+    const systemPrompt = `你是专业的音频拼接专家，擅长理解用户的自然语言描述并转换为结构化的音频拼接指令。
+
+【核心原则】：
+1. 严格按照JSON格式返回结果
+2. 确保所有指令都是可执行的
+3. **只处理用户明确要求的部分，绝对不要自作主张添加额外内容**
+4. 用户没有提到的音频部分，一律不要添加到方案中
+
+【错误示例】：
+用户说："第二首的最后20秒 + 第一首的前15秒"
+❌ 错误：生成 B最后20秒 + A前15秒 + B剩余部分 + A剩余部分
+✅ 正确：只生成 B最后20秒 + A前15秒
+
+记住：用户没说的，就不要加！`;
 
     try {
         const response = await fetch('/api/ai/splice', {
@@ -507,3 +527,59 @@ function initMuggleSpliceFeatures() {
 // 导出函数供其他模块使用
 window.initMuggleSpliceFeatures = initMuggleSpliceFeatures;
 window.switchTimelineTab = switchTimelineTab;
+
+// 初始化 JSON 信息按钮
+function initJsonInfoButton() {
+    const jsonInfoBtn = document.getElementById('muggleJsonInfoBtn');
+    const jsonModal = document.getElementById('muggleJsonModal');
+    const jsonModalOverlay = document.getElementById('muggleJsonModalOverlay');
+    const jsonModalClose = document.getElementById('muggleJsonModalClose');
+    const jsonModalBody = document.getElementById('muggleJsonModalBody');
+    
+    if (!jsonInfoBtn || !jsonModal) return;
+    
+    // 点击问号按钮显示模态框
+    jsonInfoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        if (muggleSpliceState.lastResult && muggleSpliceState.lastResult.instructions) {
+            // 格式化 JSON 数据
+            const jsonData = {
+                instructions: muggleSpliceState.lastResult.instructions,
+                estimated_duration: muggleSpliceState.lastResult.estimated_duration,
+                validation_errors: muggleSpliceState.lastResult.validation_errors || []
+            };
+            
+            jsonModalBody.textContent = JSON.stringify(jsonData, null, 2);
+            jsonModal.style.display = 'flex';
+        } else {
+            alert('暂无可显示的拼接指令');
+        }
+    });
+    
+    // 点击关闭按钮
+    if (jsonModalClose) {
+        jsonModalClose.addEventListener('click', () => {
+            jsonModal.style.display = 'none';
+        });
+    }
+    
+    // 点击遮罩层关闭
+    if (jsonModalOverlay) {
+        jsonModalOverlay.addEventListener('click', () => {
+            jsonModal.style.display = 'none';
+        });
+    }
+    
+    // ESC 键关闭
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && jsonModal.style.display === 'flex') {
+            jsonModal.style.display = 'none';
+        }
+    });
+}
+
+// 在编辑器初始化时调用
+document.addEventListener('DOMContentLoaded', () => {
+    initJsonInfoButton();
+});
