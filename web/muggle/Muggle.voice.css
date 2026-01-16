@@ -1,0 +1,97 @@
+/**
+ * Muggle.voice.css - 语音输入样式
+ * BigEyeMix 麻瓜模式
+ */
+
+/* 语音输入按钮 */
+.voice-input-btn {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+    color: white;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+    flex-shrink: 0;
+}
+
+.voice-input-btn i {
+    width: 20px;
+    height: 20px;
+}
+
+.voice-input-btn:active {
+    transform: scale(0.95);
+}
+
+.voice-input-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 录音状态 */
+.voice-input-btn.recording {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    animation: recordingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes recordingPulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 2px 20px rgba(239, 68, 68, 0.6), 0 0 0 8px rgba(239, 68, 68, 0.1);
+    }
+}
+
+/* Toast 提示 */
+.voice-toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+}
+
+.voice-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.voice-toast.voice-toast-success {
+    background: rgba(16, 185, 129, 0.9);
+}
+
+.voice-toast.voice-toast-error {
+    background: rgba(239, 68, 68, 0.9);
+}
+
+.voice-toast.voice-toast-info {
+    background: rgba(59, 130, 246, 0.9);
+}
+
+/* 麻瓜拼接输入区域布局 */
+.muggle-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.muggle-input-wrapper textarea {
+    flex: 1;
+}

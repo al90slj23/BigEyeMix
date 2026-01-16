@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import upload, process, health, muggle_splice
+from app.api import upload, process, health, muggle_splice, asr
 
 app = FastAPI(
     title="BigEyeMix API",
@@ -23,6 +23,7 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(upload.router, prefix="/api", tags=["upload"])
 app.include_router(process.router, prefix="/api", tags=["process"])
 app.include_router(muggle_splice.router, prefix="/api", tags=["muggle_splice"])
+app.include_router(asr.router, prefix="/api", tags=["asr"])
 
 @app.get("/")
 async def root():

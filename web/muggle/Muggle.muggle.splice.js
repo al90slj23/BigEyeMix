@@ -485,6 +485,11 @@ function handleMuggleRegenerate() {
 function initMuggleSpliceFeatures() {
     initTimelineTabs();
     initMuggleSplice();
+    
+    // 初始化语音输入功能
+    if (typeof initVoiceInput === 'function') {
+        initVoiceInput();
+    }
 }
 
 // 导出函数供其他模块使用

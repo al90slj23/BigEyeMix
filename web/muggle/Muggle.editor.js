@@ -96,11 +96,16 @@ function renderEditorAndTimeline() {
                             <i data-lucide="message-circle"></i>
                             描述你想要的拼接效果
                         </div>
-                        <textarea 
-                            id="muggleSpliceInput" 
-                            class="muggle-input" 
-                            placeholder="例如：我要第一个文件的前30秒，然后用淡化过渡连接第二个文件的中间部分，最后加上第一个文件的结尾..."
-                            rows="4"></textarea>
+                        <div class="muggle-input-wrapper">
+                            <textarea 
+                                id="muggleSpliceInput" 
+                                class="muggle-input" 
+                                placeholder="例如：我要第一个文件的前30秒，然后用淡化过渡连接第二个文件的中间部分，最后加上第一个文件的结尾..."
+                                rows="4"></textarea>
+                            <button class="voice-input-btn" id="voiceInputBtn" title="语音输入">
+                                <i data-lucide="mic"></i>
+                            </button>
+                        </div>
                         <button class="muggle-generate-btn" id="muggleGenerateBtn">
                             <i data-lucide="sparkles"></i> 生成拼接方案
                         </button>
