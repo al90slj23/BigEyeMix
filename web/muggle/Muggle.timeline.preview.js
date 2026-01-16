@@ -228,8 +228,9 @@ async function doUpdatePreview() {
     
     isPreviewLoading = true;
     
-    const previewSectionWrapper = document.getElementById('previewSectionWrapper');
-    if (previewSectionWrapper) previewSectionWrapper.style.display = 'block';
+    // 不在这里显示 previewSectionWrapper，让 handleMuggleApply 来控制显示时机
+    // const previewSectionWrapper = document.getElementById('previewSectionWrapper');
+    // if (previewSectionWrapper) previewSectionWrapper.style.display = 'block';
     
     previewLoadingEl.style.display = 'flex';
     previewWaveformEl.style.display = 'none';

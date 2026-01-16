@@ -7,13 +7,14 @@ function renderEditorAndTimeline() {
     const container = document.getElementById('trackEditors');
     const uploadedTracks = state.tracks.filter(t => t.uploaded);
     
-    if (state.timeline.length === 0) {
-        uploadedTracks.forEach(track => {
-            if (track.clips.length > 0) {
-                state.timeline.push({ type: 'clip', trackId: track.id, clipId: track.clips[0].id });
-            }
-        });
-    }
+    // 不再自动初始化 timeline，让用户通过麻瓜拼接或手动拼接来创建
+    // if (state.timeline.length === 0) {
+    //     uploadedTracks.forEach(track => {
+    //         if (track.clips.length > 0) {
+    //             state.timeline.push({ type: 'clip', trackId: track.id, clipId: track.clips[0].id });
+    //         }
+    //     });
+    // }
     
     container.innerHTML = `
         <div class="editor-section">
