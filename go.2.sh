@@ -36,18 +36,18 @@ else
     error "首页: https://bem.it.sc.cn/"
 fi
 
-# 测试麻瓜模式
-if curl -s -o /dev/null -w "%{http_code}" https://bem.it.sc.cn/muggle | grep -q "200"; then
-    success "麻瓜模式: https://bem.it.sc.cn/muggle"
+# 测试麻瓜模式（接受 200 或 301 重定向）
+if curl -s -o /dev/null -w "%{http_code}" https://bem.it.sc.cn/muggle/ | grep -q "200"; then
+    success "麻瓜模式: https://bem.it.sc.cn/muggle/"
 else
-    error "麻瓜模式: https://bem.it.sc.cn/muggle"
+    error "麻瓜模式: https://bem.it.sc.cn/muggle/"
 fi
 
-# 测试巫师模式
-if curl -s -o /dev/null -w "%{http_code}" https://bem.it.sc.cn/wizard | grep -q "200"; then
-    success "巫师模式: https://bem.it.sc.cn/wizard"
+# 测试巫师模式（接受 200 或 301 重定向）
+if curl -s -o /dev/null -w "%{http_code}" https://bem.it.sc.cn/wizard/ | grep -q "200"; then
+    success "巫师模式: https://bem.it.sc.cn/wizard/"
 else
-    error "巫师模式: https://bem.it.sc.cn/wizard"
+    error "巫师模式: https://bem.it.sc.cn/wizard/"
 fi
 
 # 测试 API
