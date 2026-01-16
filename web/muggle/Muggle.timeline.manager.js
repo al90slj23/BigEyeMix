@@ -53,177 +53,76 @@ class TimelineManager {
                 const clipEnd = item.customEnd !== undefined ? item.customEnd : clip.end;
                 const clipDuration = clipEnd - clipStart;
                 
-                // 检查下一个是否是 crossfade/beatsync
-                const nextItem = i + 1 < this.timeline.length ? this.timeline[i + 1] : null;
-                const isCrossfadeNext = nextItem && 
-                                       nextItem.type === 'transition' && 
-                                       (nextItem.transitionType === 'crossfade' || nextItem.transitionType === 'beatsync') &&
-                                       nextItem.transitionData &&
-                                       nextItem.transitionData.nextFileId;
+                // Clip 完整播放，不分段
+                const computedItem = {
+                    ...item,
+                    accumulatedStart: currentTime,
+                    accumulatedEnd: currentTime + clipDuration,
+                    actualDuration: clipDuration,
+                    clipStart: clipStart,
+                    clipEnd: clipEnd,
+                    fileId: track.uploaded.file_id
+                };
+                this.computedTimeline.push(computedItem);
                 
-                if (isCrossfadeNext) {
-                    // 当前片段后面有 crossfade，需要分段处理
-                    const overlapDuration = nextItem.duration;
-                    const mainDuration = clipDuration - overlapDuration;
-                    
-                    if (mainDuration > 0) {
-                        // 主要部分（不重叠）
-                        const mainItem = {
-                            ...item,
-                            accumulatedStart: currentTime,
-                            accumulatedEnd: currentTime + mainDuration,
-                            actualDuration: mainDuration,
-                            clipStart: clipStart,
-                            clipEnd: clipEnd - overlapDuration,
-                            fileId: track.uploaded.file_id
-                        };
-                        this.computedTimeline.push(mainItem);
-                        
-                        // 添加到播放片段
-                        this.playbackSegments.push({
-                            type: 'clip',
-                            fileId: track.uploaded.file_id,
-                            clipStart: clipStart,
-                            clipEnd: clipEnd - overlapDuration,
-                            accumulatedStart: currentTime,
-                            accumulatedEnd: currentTime + mainDuration,
-                            duration: mainDuration
-                        });
-                        
-                        currentTime += mainDuration;
-                        
-                        this.log(`[TimelineManager] Clip ${i} main part: ${mainDuration}s (accumulated: ${mainItem.accumulatedStart}s - ${mainItem.accumulatedEnd}s)`);
-                    }
-                    
-                    // 处理 crossfade（在下一次循环中处理）
-                    // 这里只是标记，实际处理在 transition 分支
-                    
-                } else {
-                    // 正常片段，没有后续 crossfade
-                    const computedItem = {
-                        ...item,
-                        accumulatedStart: currentTime,
-                        accumulatedEnd: currentTime + clipDuration,
-                        actualDuration: clipDuration,
-                        clipStart: clipStart,
-                        clipEnd: clipEnd,
-                        fileId: track.uploaded.file_id
-                    };
-                    this.computedTimeline.push(computedItem);
-                    
-                    // 添加到播放片段
-                    this.playbackSegments.push({
-                        type: 'clip',
-                        fileId: track.uploaded.file_id,
-                        clipStart: clipStart,
-                        clipEnd: clipEnd,
-                        accumulatedStart: currentTime,
-                        accumulatedEnd: currentTime + clipDuration,
-                        duration: clipDuration
-                    });
-                    
-                    currentTime += clipDuration;
-                    
-                    this.log(`[TimelineManager] Clip ${i}: ${clipDuration}s (accumulated: ${computedItem.accumulatedStart}s - ${computedItem.accumulatedEnd}s)`);
-                }
+                // 添加到播放片段
+                this.playbackSegments.push({
+                    type: 'clip',
+                    fileId: track.uploaded.file_id,
+                    clipStart: clipStart,
+                    clipEnd: clipEnd,
+                    accumulatedStart: currentTime,
+                    accumulatedEnd: currentTime + clipDuration,
+                    duration: clipDuration
+                });
+                
+                currentTime += clipDuration;
+                
+                this.log(`[TimelineManager] Clip ${i}: ${clipDuration}s (accumulated: ${computedItem.accumulatedStart}s - ${computedItem.accumulatedEnd}s)`);
                 
             } else if (item.type === 'transition') {
                 const transType = item.transitionType || 'magicfill';
                 const duration = item.duration;
                 
                 if (transType === 'crossfade' || transType === 'beatsync') {
-                    // Crossfade: 重叠播放，减少总时长
+                    // Crossfade: 淡入淡出效果，不改变总时长
+                    // 实现方式：回退时间，让下一个片段与前一个片段重叠播放
+                    
                     if (item.transitionData && item.transitionData.prevFileId && item.transitionData.nextFileId) {
                         // 有完整的前后信息
                         const data = item.transitionData;
                         
-                        // Crossfade 的累积时间：从当前时间开始（与前段重叠）
+                        // 回退时间，创建重叠区域
+                        currentTime -= duration;
+                        
+                        // Crossfade 标记（用于 UI 显示）
                         const computedItem = {
                             ...item,
-                            accumulatedStart: currentTime,
-                            accumulatedEnd: currentTime + duration,
-                            actualDuration: duration
+                            accumulatedStart: currentTime,  // 重叠区域的起始时间
+                            accumulatedEnd: currentTime + duration,  // 重叠区域的结束时间
+                            actualDuration: duration,
+                            isCrossfadeMarker: true  // 标记这是一个 crossfade 效果
                         };
                         this.computedTimeline.push(computedItem);
                         
-                        // 添加到播放片段
-                        this.playbackSegments.push({
-                            type: 'crossfade',
-                            prevFileId: data.prevFileId,
-                            prevStart: data.prevFadeStart,
-                            prevEnd: data.prevFadeEnd,
-                            nextFileId: data.nextFileId,
-                            nextStart: data.nextFadeStart,
-                            nextEnd: data.nextFadeEnd,
-                            accumulatedStart: currentTime,
-                            accumulatedEnd: currentTime + duration,
-                            duration: duration,
-                            transitionType: transType
-                        });
+                        this.log(`[TimelineManager] ${transType} ${i}: ${duration}s overlap at ${currentTime}s - next clip will start at ${currentTime}s (overlap with previous)`);
                         
-                        currentTime += duration;
+                        // Crossfade 不添加独立的播放片段
+                        // 下一个 clip 会从 currentTime 开始，与前一个 clip 的最后部分重叠
                         
-                        this.log(`[TimelineManager] ${transType} ${i}: ${duration}s (accumulated: ${computedItem.accumulatedStart}s - ${computedItem.accumulatedEnd}s)`);
-                        
-                        // 处理下一个片段的剩余部分
-                        const nextItem = i + 1 < this.timeline.length ? this.timeline[i + 1] : null;
-                        if (nextItem && nextItem.type === 'clip') {
-                            const nextTrack = this.tracks.find(t => t.id === nextItem.trackId);
-                            if (nextTrack && nextTrack.uploaded) {
-                                const nextClip = nextTrack.clips.find(c => c.id === nextItem.clipId);
-                                if (nextClip) {
-                                    const nextClipStart = nextItem.customStart !== undefined ? nextItem.customStart : nextClip.start;
-                                    const nextClipEnd = nextItem.customEnd !== undefined ? nextItem.customEnd : nextClip.end;
-                                    const nextClipDuration = nextClipEnd - nextClipStart;
-                                    const nextMainDuration = nextClipDuration - duration;
-                                    
-                                    if (nextMainDuration > 0) {
-                                        // 下一个片段的剩余部分
-                                        const nextComputedItem = {
-                                            ...nextItem,
-                                            accumulatedStart: currentTime,
-                                            accumulatedEnd: currentTime + nextMainDuration,
-                                            actualDuration: nextMainDuration,
-                                            clipStart: nextClipStart + duration,
-                                            clipEnd: nextClipEnd,
-                                            fileId: nextTrack.uploaded.file_id
-                                        };
-                                        this.computedTimeline.push(nextComputedItem);
-                                        
-                                        // 添加到播放片段
-                                        this.playbackSegments.push({
-                                            type: 'clip',
-                                            fileId: nextTrack.uploaded.file_id,
-                                            clipStart: nextClipStart + duration,
-                                            clipEnd: nextClipEnd,
-                                            accumulatedStart: currentTime,
-                                            accumulatedEnd: currentTime + nextMainDuration,
-                                            duration: nextMainDuration
-                                        });
-                                        
-                                        currentTime += nextMainDuration;
-                                        
-                                        this.log(`[TimelineManager] Clip ${i + 1} remaining part: ${nextMainDuration}s (accumulated: ${nextComputedItem.accumulatedStart}s - ${nextComputedItem.accumulatedEnd}s)`);
-                                    }
-                                    
-                                    // 跳过下一个片段（已处理）
-                                    i += 1;
-                                }
-                            }
-                        }
                     } else {
-                        // 没有完整信息，标记为处理中
+                        // 没有完整信息，暂时不处理
                         const computedItem = {
                             ...item,
                             accumulatedStart: currentTime,
-                            accumulatedEnd: currentTime + duration,
-                            actualDuration: duration
+                            accumulatedEnd: currentTime,
+                            actualDuration: 0,
+                            isCrossfadeMarker: true,
+                            incomplete: true
                         };
                         this.computedTimeline.push(computedItem);
                         
-                        this.log(`[TimelineManager] ${transType} ${i} (incomplete): ${duration}s (accumulated: ${computedItem.accumulatedStart}s - ${computedItem.accumulatedEnd}s)`);
-                        
-                        // 暂时不改变时长（等完整信息后会重新计算）
+                        this.log(`[TimelineManager] ${transType} ${i} (incomplete): waiting for data`);
                     }
                     
                 } else if (transType === 'magicfill') {
