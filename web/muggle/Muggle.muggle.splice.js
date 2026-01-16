@@ -170,7 +170,18 @@ function extractJsonFromText(text) {
     const lastBrace = text.lastIndexOf('}');
     
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        return text.substring(firstBrace, lastBrace + 1);
+        let jsonText = text.substring(firstBrace, lastBrace + 1);
+        
+        // 将 Python 字典格式转换为标准 JSON 格式
+        // 1. 将单引号替换为双引号（但要小心字符串内部的单引号）
+        // 2. 处理 True/False/None 等 Python 特有的值
+        jsonText = jsonText
+            .replace(/'/g, '"')  // 单引号 → 双引号
+            .replace(/True/g, 'true')  // Python True → JSON true
+            .replace(/False/g, 'false')  // Python False → JSON false
+            .replace(/None/g, 'null');  // Python None → JSON null
+        
+        return jsonText;
     }
     
     return text.trim();

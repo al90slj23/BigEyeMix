@@ -502,7 +502,7 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
    - 如果需要自定义时间范围，添加 customStart 和 customEnd（数字类型，单位：秒）
    - 每个 transition 必须包含 type, transitionType, duration（数字类型，单位：秒）
 
-请严格按照以下 JSON 格式输出（不要添加 markdown 代码块标记）：
+请严格按照以下 JSON 格式输出（不要添加 markdown 代码块标记，使用标准 JSON 双引号格式）：
 
 {{
   "instructions": [
@@ -512,7 +512,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
   ],
   "estimated_duration": 数值,
   "explanation": "详细的拼接方案说明..."
-}}"""
+}}
+
+⚠️ 重要：必须使用双引号 " 而不是单引号 '，这是标准 JSON 格式要求。"""
 
     return prompt
 
