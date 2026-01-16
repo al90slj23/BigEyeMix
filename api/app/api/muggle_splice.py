@@ -479,39 +479,35 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 }}
 
 输出格式要求：
-1. explanation 必须包含三个部分：
-   - "片段定义："列出所有使用的片段（格式：轨道标签+片段ID，如A1、A2、B1）
-   - "拼接顺序："用 + 和括号清晰展示拼接逻辑
-   - "最终效果："说明总时长和效果
-2. 时间格式统一使用 mm:ss.cc（如 01:56.00）
-3. 片段命名规则：轨道标签(A/B/C...) + 片段ID(1/2/3...)
-4. 当同一轨道有多个片段时，使用不同的片段ID（A1、A2、A3...）
-5. 过渡类型要用中文名称（淡化过渡、节拍过渡、魔法填充、静音填充）
+1. **你的推理过程会自动显示给用户**，所以请在推理时详细思考：
+   - 用户想要什么效果
+   - 需要分成几个片段
+   - 如何交替排列
+   - 时长如何计算
+   
+2. **最终输出必须是纯 JSON 格式**，包含两个字段：
+   - `explanation`: 给人类看的详细说明（包含片段定义、拼接顺序、最终效果）
+   - `instructions`: 给程序使用的标准 JSON 指令数组
+   - `estimated_duration`: 精确计算的总时长（数字）
 
-请严格按照以下JSON格式返回：
+3. **explanation 格式要求**：
+   - 第一部分：片段定义（列出所有使用的片段，格式：轨道标签+片段ID+时间范围）
+   - 第二部分：拼接顺序（用 + 和括号清晰展示拼接逻辑）
+   - 第三部分：最终效果（说明总时长和效果）
+   - 时间格式统一使用 mm:ss.cc（如 01:56.00）
 
-```json
+4. **instructions 格式要求**：
+   - 每个 clip 必须包含 type, trackId, clipId
+   - 如果需要自定义时间范围，添加 customStart 和 customEnd（数字类型，单位：秒）
+   - 每个 transition 必须包含 type, transitionType, duration（数字类型，单位：秒）
+
+请严格按照以下 JSON 格式输出（不要添加 markdown 代码块标记）：
+
 {{
-  "explanation": "详细的拼接方案说明，包括使用的片段、处理类型、预期效果等",
-  "instructions": [
-    {{
-      "type": "clip",
-      "trackId": "轨道ID",
-      "clipId": "片段ID",
-      "customStart": 可选的自定义开始时间（秒，数字类型）,
-      "customEnd": 可选的自定义结束时间（秒，数字类型）
-    }},
-    {{
-      "type": "transition", 
-      "transitionType": "crossfade|beatsync|magicfill|silence",
-      "duration": 处理时长数值
-    }}
-  ],
-  "estimated_duration": 预估总时长数值
-}}
-```
-
-只返回JSON，不要添加任何其他文字说明。"""
+  "explanation": "详细的拼接方案说明...",
+  "instructions": [...],
+  "estimated_duration": 数值
+}}"""
 
     return prompt
 

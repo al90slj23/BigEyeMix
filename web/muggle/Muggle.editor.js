@@ -114,8 +114,13 @@ function renderEditorAndTimeline() {
                     <div class="muggle-result-area" id="muggleResultArea" style="display:none;">
                         <div class="muggle-thinking-box" id="muggleThinkingBox" style="display:none;">
                             <div class="thinking-header">
-                                <i data-lucide="brain-circuit"></i>
-                                <span>AI 思考过程</span>
+                                <div class="thinking-header-left">
+                                    <i data-lucide="brain-circuit"></i>
+                                    <span>AI 思考过程</span>
+                                </div>
+                                <button class="thinking-copy-btn" id="muggleThinkingCopyBtn" title="复制思考过程">
+                                    <i data-lucide="copy"></i>
+                                </button>
                             </div>
                             <div class="thinking-content" id="muggleThinkingContent"></div>
                         </div>

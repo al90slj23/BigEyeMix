@@ -157,6 +157,25 @@ function buildMuggleContext() {
     return context;
 }
 
+// 从文本中提取 JSON（处理 markdown 代码块等格式）
+function extractJsonFromText(text) {
+    // 移除可能的 markdown 代码块标记
+    text = text.trim();
+    
+    // 尝试移除 ```json 和 ``` 标记
+    text = text.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '');
+    
+    // 尝试找到第一个 { 和最后一个 }
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        return text.substring(firstBrace, lastBrace + 1);
+    }
+    
+    return text.trim();
+}
+
 // 调用DeepSeek API生成拼接指令（流式）
 async function generateSpliceInstructionsStream(userDescription, context, thinkingElement, resultElement) {
     return new Promise((resolve, reject) => {
@@ -190,7 +209,26 @@ async function generateSpliceInstructionsStream(userDescription, context, thinki
                 if (done) {
                     // 流结束，解析最终结果
                     try {
-                        const result = JSON.parse(contentText);
+                        // DeepSeek Reasoner 的输出格式：
+                        // - reasoning_content: 推理过程（已显示在思考窗口）
+                        // - content: 最终 JSON 输出
+                        
+                        let textToParse = contentText.trim();
+                        
+                        // 如果 content 为空或只有 null，说明 JSON 在 reasoning 的最后
+                        if (!textToParse || textToParse === 'null' || textToParse === '') {
+                            console.log('[Stream] content 为空，尝试从 reasoning 中提取 JSON');
+                            textToParse = reasoningText;
+                        }
+                        
+                        console.log('[Stream] 准备解析的文本长度:', textToParse.length);
+                        
+                        // 提取 JSON（可能被包裹在 markdown 代码块或其他文本中）
+                        const jsonContent = extractJsonFromText(textToParse);
+                        console.log('[Stream] 提取的 JSON 长度:', jsonContent.length);
+                        
+                        const result = JSON.parse(jsonContent);
+                        console.log('[Stream] 解析成功:', result);
                         
                         // 验证和处理结果
                         if (result.explanation && result.instructions) {
@@ -199,7 +237,7 @@ async function generateSpliceInstructionsStream(userDescription, context, thinki
                                 success: true
                             };
                             
-                            // 显示结果
+                            // 显示结果（人类可读的说明）
                             let displayContent = result.explanation;
                             if (result.estimated_duration) {
                                 displayContent += `\n\n⏱️ 预估总时长：${formatTime(result.estimated_duration)}`;
@@ -213,11 +251,17 @@ async function generateSpliceInstructionsStream(userDescription, context, thinki
                             if (applyBtn) applyBtn.style.display = 'inline-block';
                             if (regenerateBtn) regenerateBtn.style.display = 'inline-block';
                             
+                            // 保持思考窗口显示，让用户可以查看 AI 的推理过程
+                            
                             resolve(result);
                         } else {
-                            throw new Error('AI 返回的数据格式不正确');
+                            throw new Error('AI 返回的数据格式不正确：缺少 explanation 或 instructions 字段');
                         }
                     } catch (e) {
+                        console.error('[Stream] 解析失败');
+                        console.error('[Stream] contentText:', contentText);
+                        console.error('[Stream] reasoningText 长度:', reasoningText.length);
+                        console.error('[Stream] 错误:', e);
                         reject(new Error(`解析结果失败: ${e.message}`));
                     }
                     return;
@@ -528,7 +572,43 @@ function initJsonInfoButton() {
     });
 }
 
+// 初始化思考过程复制按钮
+function initThinkingCopyButton() {
+    const copyBtn = document.getElementById('muggleThinkingCopyBtn');
+    const thinkingContent = document.getElementById('muggleThinkingContent');
+    
+    if (!copyBtn || !thinkingContent) return;
+    
+    copyBtn.addEventListener('click', async () => {
+        const text = thinkingContent.textContent;
+        
+        if (!text || text.trim() === '') {
+            return;
+        }
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            
+            // 显示复制成功提示
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i data-lucide="check"></i>';
+            copyBtn.classList.add('copied');
+            refreshIcons();
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.classList.remove('copied');
+                refreshIcons();
+            }, 2000);
+        } catch (err) {
+            console.error('复制失败:', err);
+            alert('复制失败，请手动选择文本复制');
+        }
+    });
+}
+
 // 在编辑器初始化时调用
 document.addEventListener('DOMContentLoaded', () => {
     initJsonInfoButton();
+    initThinkingCopyButton();
 });
