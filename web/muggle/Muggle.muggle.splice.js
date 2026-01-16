@@ -305,20 +305,33 @@ async function handleMuggleApply() {
     }
     
     try {
-        // 这里需要解析AI生成的指令并转换为实际的timeline操作
-        // 暂时使用简单的示例实现
+        // 应用拼接方案到时间轴
         await applyMuggleSpliceResult(muggleSpliceState.lastResult);
         
-        // 切换到手动拼接标签页显示结果
-        switchTimelineTab('manual');
-        
-        // 显示预览
+        // 不切换标签页，直接在麻瓜拼接标签页下显示预览
+        // 显示预览区域
         const previewWrapper = document.getElementById('previewSectionWrapper');
         if (previewWrapper) {
             previewWrapper.style.display = 'block';
+            // 滚动到预览区域
+            previewWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
         
-        alert('拼接方案已应用！');
+        // 隐藏应用按钮，显示成功提示
+        const applyBtn = document.getElementById('muggleApplyBtn');
+        const regenerateBtn = document.getElementById('muggleRegenerateBtn');
+        if (applyBtn) applyBtn.style.display = 'none';
+        if (regenerateBtn) regenerateBtn.style.display = 'none';
+        
+        // 在结果区域添加成功提示
+        const resultContent = document.getElementById('muggleResultContent');
+        if (resultContent) {
+            const successMsg = document.createElement('div');
+            successMsg.className = 'success-message';
+            successMsg.innerHTML = '<i data-lucide="check-circle"></i> 方案已应用，请查看下方预览';
+            resultContent.appendChild(successMsg);
+            refreshIcons();
+        }
         
     } catch (error) {
         console.error('应用拼接方案失败:', error);
