@@ -224,21 +224,23 @@ class PreviewPlayer {
                     const offset = fromTime > item.accumulatedStart ? fromTime - item.accumulatedStart : 0;
                     const duration = item.duration - offset;
                     
-                    // 计算实际的调度时间（相对于 audioContext.currentTime）
-                    const actualScheduleTime = this.audioContext.currentTime + (item.accumulatedStart - fromTime) + offset;
+                    // 计算实际的调度时间：当前时间 + 该片段相对于播放起点的延迟
+                    const delayFromStart = Math.max(0, item.accumulatedStart - fromTime);
+                    const actualScheduleTime = this.audioContext.currentTime + delayFromStart;
                     
                     source.start(actualScheduleTime, offset, duration);
                     this.currentSources.push(source);
                     
-                    console.log(`[Player] Scheduled clip ${item.file_id} at ${actualScheduleTime}s (accumulated: ${item.accumulatedStart}s), duration ${duration}s`);
+                    console.log(`[Player] Scheduled clip ${item.file_id} at ${actualScheduleTime}s (delay: ${delayFromStart}s, accumulated: ${item.accumulatedStart}s), duration ${duration}s`);
                 }
             } else if (item.type === 'crossfade') {
                 const prevBuffer = await this.loadAudioBuffer(item.prevFileId, item.prevStart, item.prevEnd);
                 const nextBuffer = await this.loadAudioBuffer(item.nextFileId, item.nextStart, item.nextEnd);
                 
                 if (prevBuffer && nextBuffer) {
-                    // 计算实际的调度时间
-                    const actualScheduleTime = this.audioContext.currentTime + (item.accumulatedStart - fromTime);
+                    // 计算实际的调度时间：当前时间 + 该过渡相对于播放起点的延迟
+                    const delayFromStart = Math.max(0, item.accumulatedStart - fromTime);
+                    const actualScheduleTime = this.audioContext.currentTime + delayFromStart;
                     
                     // 创建淡出效果
                     const prevSource = this.audioContext.createBufferSource();
@@ -268,7 +270,7 @@ class PreviewPlayer {
                     
                     this.currentSources.push(prevSource, nextSource);
                     
-                    console.log(`[Player] Scheduled ${item.transitionType} at ${actualScheduleTime}s (accumulated: ${item.accumulatedStart}s), duration ${item.duration}s`);
+                    console.log(`[Player] Scheduled ${item.transitionType} at ${actualScheduleTime}s (delay: ${delayFromStart}s, accumulated: ${item.accumulatedStart}s), duration ${item.duration}s`);
                 }
             } else if (item.type === 'silence') {
                 // 静音：不需要调度，只是占位
