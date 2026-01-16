@@ -387,35 +387,77 @@ async function applyMuggleSpliceResult(result) {
     // 清空当前时间轴
     state.timeline = [];
     
-    // 简单示例：添加第一个轨道的第一个片段
-    const uploadedTracks = state.tracks.filter(t => t.uploaded);
-    if (uploadedTracks.length > 0) {
-        const track1 = uploadedTracks[0];
-        if (track1.clips.length > 0) {
-            state.timeline.push({ 
-                type: 'clip', 
-                trackId: track1.id, 
-                clipId: track1.clips[0].id 
-            });
+    // 检查是否有指令
+    if (!result.instructions || result.instructions.length === 0) {
+        throw new Error('没有可执行的拼接指令');
+    }
+    
+    // 解析并应用每条指令
+    for (const instruction of result.instructions) {
+        if (instruction.type === 'clip') {
+            // 查找对应的轨道和片段
+            const track = state.tracks.find(t => t.id === instruction.trackId);
+            if (!track) {
+                console.warn(`未找到轨道: ${instruction.trackId}`);
+                continue;
+            }
             
-            // 添加过渡
-            state.timeline.push({ 
-                type: 'transition', 
-                transitionType: 'crossfade', 
-                duration: 3 
-            });
+            const clip = track.clips.find(c => c.id === instruction.clipId);
+            if (!clip) {
+                console.warn(`未找到片段: ${instruction.trackId}${instruction.clipId}`);
+                continue;
+            }
             
-            // 如果有第二个轨道，添加第二个片段
-            if (uploadedTracks.length > 1) {
-                const track2 = uploadedTracks[1];
-                if (track2.clips.length > 0) {
-                    state.timeline.push({ 
-                        type: 'clip', 
-                        trackId: track2.id, 
-                        clipId: track2.clips[0].id 
-                    });
+            // 构建时间轴项
+            const timelineItem = {
+                type: 'clip',
+                trackId: instruction.trackId,
+                clipId: instruction.clipId
+            };
+            
+            // 如果有自定义时间范围，添加到时间轴项
+            if (instruction.customStart !== undefined || instruction.customEnd !== undefined) {
+                timelineItem.customStart = instruction.customStart !== undefined ? instruction.customStart : clip.start;
+                timelineItem.customEnd = instruction.customEnd !== undefined ? instruction.customEnd : clip.end;
+            }
+            
+            state.timeline.push(timelineItem);
+            
+        } else if (instruction.type === 'transition') {
+            // 添加过渡块
+            const transitionItem = {
+                type: 'transition',
+                transitionType: instruction.transitionType || 'crossfade',
+                duration: instruction.duration || 3,
+                transitionId: `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            };
+            
+            // 如果是 crossfade 或 beatsync，需要检查前后是否有片段
+            if ((instruction.transitionType === 'crossfade' || instruction.transitionType === 'beatsync') && 
+                state.timeline.length > 0) {
+                
+                const prevItem = state.timeline[state.timeline.length - 1];
+                if (prevItem.type === 'clip') {
+                    // 获取前一个片段的信息
+                    const prevTrack = state.tracks.find(t => t.id === prevItem.trackId);
+                    const prevClip = prevTrack?.clips.find(c => c.id === prevItem.clipId);
+                    
+                    if (prevClip) {
+                        const halfDuration = transitionItem.duration / 2;
+                        const prevEnd = prevItem.customEnd !== undefined ? prevItem.customEnd : prevClip.end;
+                        
+                        // 存储过渡数据
+                        transitionItem.transitionData = {
+                            prevTrackId: prevItem.trackId,
+                            prevClipId: prevItem.clipId,
+                            prevFadeStart: prevEnd - halfDuration,
+                            prevFadeEnd: prevEnd
+                        };
+                    }
                 }
             }
+            
+            state.timeline.push(transitionItem);
         }
     }
     

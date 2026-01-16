@@ -51,9 +51,21 @@ function renderTimeline() {
             if (item.type === 'clip') {
                 const track = state.tracks.find(t => t.id === item.trackId);
                 if (!track) return '';
+                
+                // 获取片段信息
+                const clip = track.clips.find(c => c.id === item.clipId);
+                let label = `${track.label}${item.clipId}`;
+                
+                // 如果有自定义时间范围，显示时间信息
+                if (item.customStart !== undefined || item.customEnd !== undefined) {
+                    const start = item.customStart !== undefined ? item.customStart : (clip ? clip.start : 0);
+                    const end = item.customEnd !== undefined ? item.customEnd : (clip ? clip.end : 0);
+                    label += ` (${formatTime(start)}-${formatTime(end)})`;
+                }
+                
                 return `
                     <div class="timeline-item clip-item" data-index="${index}" style="background:${track.color.bg}">
-                        <span class="item-label">${track.label}${item.clipId}</span>
+                        <span class="item-label">${label}</span>
                     </div>
                 `;
             } else if (item.type === 'transition') {
@@ -157,7 +169,12 @@ function updateTotalDuration() {
             const track = state.tracks.find(t => t.id === item.trackId);
             if (track) {
                 const clip = track.clips.find(c => c.id === item.clipId);
-                if (clip) total += clip.end - clip.start;
+                if (clip) {
+                    // 支持自定义时间范围
+                    const start = item.customStart !== undefined ? item.customStart : clip.start;
+                    const end = item.customEnd !== undefined ? item.customEnd : clip.end;
+                    total += end - start;
+                }
             }
         } else if (item.type === 'transition') {
             const transType = item.transitionType || 'magicfill';

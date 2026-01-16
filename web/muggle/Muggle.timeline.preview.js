@@ -265,12 +265,16 @@ async function doUpdatePreview() {
             if (track && track.uploaded) {
                 const clip = track.clips.find(c => c.id === item.clipId);
                 if (clip) {
-                    const duration = clip.end - clip.start;
+                    // 支持自定义时间范围
+                    const start = item.customStart !== undefined ? item.customStart : clip.start;
+                    const end = item.customEnd !== undefined ? item.customEnd : clip.end;
+                    const duration = end - start;
+                    
                     segments.push({
                         type: 'clip',
                         file_id: track.uploaded.file_id,
-                        start: clip.start,
-                        end: clip.end,
+                        start: start,
+                        end: end,
                         duration: duration
                     });
                     previewSegments.push({
