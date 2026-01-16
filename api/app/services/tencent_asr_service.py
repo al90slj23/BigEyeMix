@@ -80,24 +80,24 @@ class TencentASRService:
             # 将音频转为 base64
             audio_base64 = base64.b64encode(audio_data).decode('utf-8')
             
-            # 音频格式映射
+            # 音频格式映射（字符串格式）
             format_map = {
-                'wav': 1,
-                'mp3': 3,
-                'm4a': 4,
-                'flac': 5,
-                'opus': 6,
-                'amr': 7,
-                'webm': 1,  # webm 当作 wav 处理
-                'ogg': 1    # ogg 当作 wav 处理
+                'wav': 'wav',
+                'mp3': 'mp3',
+                'm4a': 'm4a',
+                'flac': 'flac',
+                'opus': 'opus',
+                'amr': 'amr',
+                'webm': 'wav',  # webm 当作 wav 处理
+                'ogg': 'wav'    # ogg 当作 wav 处理
             }
-            voice_format = format_map.get(audio_format.lower(), 1)
+            voice_format_str = format_map.get(audio_format.lower(), 'wav')
             
             # 构建请求
             req = self.models.SentenceRecognitionRequest()
             req.EngSerViceType = "16k_zh"  # 16k 中文通用模型
             req.SourceType = 1  # 1: 音频数据
-            req.VoiceFormat = voice_format
+            req.VoiceFormat = voice_format_str
             req.Data = audio_base64
             req.DataLen = len(audio_data)
             req.SubServiceType = 2  # 2: 一句话识别
