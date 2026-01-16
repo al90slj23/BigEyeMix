@@ -1,0 +1,109 @@
+/* BigEyeMix 动态 Logo 样式 */
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    user-select: none;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.logo:active {
+    transform: scale(0.95);
+}
+
+/* 眼睛图标动画 */
+.logo i {
+    animation: eyeBlink 4s ease-in-out infinite;
+}
+
+@keyframes eyeBlink {
+    0%, 90%, 100% {
+        transform: scaleY(1);
+    }
+    93%, 97% {
+        transform: scaleY(0.1);
+    }
+    95% {
+        transform: scaleY(1);
+    }
+}
+
+/* 文字渐变效果 */
+.logo-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: logoGradient 3s ease infinite;
+}
+
+@keyframes logoGradient {
+    0%, 100% {
+        background-position: 0% center;
+    }
+    50% {
+        background-position: 100% center;
+    }
+}
+
+/* 悬停时的光晕效果 */
+.logo::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.logo:hover::after {
+    transform: translate(-50%, -50%) scale(1.5);
+}
+
+/* 点击波纹效果 */
+@keyframes ripple {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+    }
+}
+
+.logo.clicked::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(102, 126, 234, 0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: ripple 0.6s ease-out;
+    pointer-events: none;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .logo {
+        font-size: 18px;
+    }
+}
