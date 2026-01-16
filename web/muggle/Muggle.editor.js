@@ -112,6 +112,13 @@ function renderEditorAndTimeline() {
                         </div>
                     </div>
                     <div class="muggle-result-area" id="muggleResultArea" style="display:none;">
+                        <div class="muggle-thinking-box" id="muggleThinkingBox" style="display:none;">
+                            <div class="thinking-header">
+                                <i data-lucide="brain-circuit"></i>
+                                <span>AI 思考过程</span>
+                            </div>
+                            <div class="thinking-content" id="muggleThinkingContent"></div>
+                        </div>
                         <div class="muggle-result-header">
                             <i data-lucide="check-circle"></i>
                             请确认大眼怪想要表达的拼接方案

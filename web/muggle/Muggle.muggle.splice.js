@@ -85,6 +85,8 @@ async function handleMuggleGenerate() {
     const generateBtn = document.getElementById('muggleGenerateBtn');
     const resultArea = document.getElementById('muggleResultArea');
     const resultContent = document.getElementById('muggleResultContent');
+    const thinkingBox = document.getElementById('muggleThinkingBox');
+    const thinkingContent = document.getElementById('muggleThinkingContent');
     
     if (!input || !input.value.trim()) {
         alert('请输入拼接描述');
@@ -103,15 +105,30 @@ async function handleMuggleGenerate() {
         const context = buildMuggleContext();
         const userDescription = input.value.trim();
         
-        // 显示生成状态
-        if (resultArea) {
+        // 显示思考过程窗口
+        if (resultArea && thinkingBox && thinkingContent) {
             resultArea.style.display = 'block';
+            thinkingBox.style.display = 'block';
+            thinkingContent.innerHTML = '';
             resultContent.innerHTML = '<div class="generating-status"><i data-lucide="brain-circuit"></i> AI正在分析您的描述...</div>';
             refreshIcons();
         }
         
-        // 调用DeepSeek API生成拼接方案
-        const result = await generateSpliceInstructions(userDescription, context);
+        // 使用流式 API
+        await generateSpliceInstructionsStream(userDescription, context, thinkingContent, resultContent);
+        
+    } catch (error) {
+        console.error('麻瓜拼接生成失败:', error);
+        if (resultContent) {
+            resultContent.innerHTML = `<div class="error-content">❌ 生成失败: ${error.message}</div>`;
+        }
+    } finally {
+        muggleSpliceState.isGenerating = false;
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i data-lucide="sparkles"></i> 生成拼接方案';
+        refreshIcons();
+    }
+}
         
         if (result && result.success) {
             muggleSpliceState.lastResult = result;
@@ -189,6 +206,118 @@ function buildMuggleContext() {
     };
     
     return context;
+}
+
+// 调用DeepSeek API生成拼接指令（流式）
+async function generateSpliceInstructionsStream(userDescription, context, thinkingElement, resultElement) {
+    return new Promise((resolve, reject) => {
+        const requestBody = {
+            prompt: '', // 会在后端构建
+            system_prompt: '', // 会在后端构建
+            context: context,
+            user_description: userDescription
+        };
+        
+        // 使用 fetch 的流式读取
+        fetch('/api/ai/splice/stream', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let reasoningText = '';
+            let contentText = '';
+            
+            function processText({ done, value }) {
+                if (done) {
+                    // 流结束，解析最终结果
+                    try {
+                        const result = JSON.parse(contentText);
+                        
+                        // 验证和处理结果
+                        if (result.explanation && result.instructions) {
+                            muggleSpliceState.lastResult = {
+                                ...result,
+                                success: true
+                            };
+                            
+                            // 显示结果
+                            let displayContent = result.explanation;
+                            if (result.estimated_duration) {
+                                displayContent += `\n\n⏱️ 预估总时长：${formatTime(result.estimated_duration)}`;
+                            }
+                            
+                            resultElement.innerHTML = `<div class="result-content">${displayContent.replace(/\n/g, '<br>')}</div>`;
+                            
+                            // 显示应用按钮
+                            const applyBtn = document.getElementById('muggleApplyBtn');
+                            const regenerateBtn = document.getElementById('muggleRegenerateBtn');
+                            if (applyBtn) applyBtn.style.display = 'inline-block';
+                            if (regenerateBtn) regenerateBtn.style.display = 'inline-block';
+                            
+                            resolve(result);
+                        } else {
+                            throw new Error('AI 返回的数据格式不正确');
+                        }
+                    } catch (e) {
+                        reject(new Error(`解析结果失败: ${e.message}`));
+                    }
+                    return;
+                }
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6);
+                        
+                        try {
+                            const data = JSON.parse(dataStr);
+                            
+                            if (data.error) {
+                                reject(new Error(data.error));
+                                return;
+                            }
+                            
+                            if (data.type === 'reasoning') {
+                                // 推理过程 - 打字机效果
+                                reasoningText += data.content;
+                                thinkingElement.textContent = reasoningText;
+                                // 自动滚动到底部
+                                thinkingElement.scrollTop = thinkingElement.scrollHeight;
+                            } else if (data.type === 'content') {
+                                // 最终内容
+                                contentText += data.content;
+                            } else if (data.done) {
+                                // 完成标记
+                                return reader.read().then(processText);
+                            }
+                        } catch (e) {
+                            console.warn('解析 SSE 数据失败:', e, dataStr);
+                        }
+                    }
+                }
+                
+                return reader.read().then(processText);
+            }
+            
+            return reader.read().then(processText);
+        })
+        .catch(error => {
+            reject(error);
+        });
+    });
 }
 
 // 调用DeepSeek API生成拼接指令

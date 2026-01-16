@@ -4,6 +4,7 @@
 """
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, validator
 from typing import Dict, List, Any, Optional, Union, Literal
 import httpx
@@ -815,3 +816,100 @@ def format_time(seconds: float) -> str:
     secs = int(seconds % 60)
     centisecs = int((seconds % 1) * 100)
     return f"{minutes:02d}:{secs:02d}.{centisecs:02d}"
+
+
+@router.post("/ai/splice/stream")
+async def generate_muggle_splice_stream(request: MuggleSpliceRequest):
+    """
+    使用 DeepSeek Reasoner 生成麻瓜拼接方案（流式输出）
+    支持实时显示推理过程
+    """
+    from app.core.config import settings
+    import json
+    import asyncio
+    
+    deepseek_key = settings.APIKEY_MacOS_Code_DeepSeek
+    
+    if not deepseek_key:
+        raise HTTPException(
+            status_code=500,
+            detail="未配置 DeepSeek API 密钥"
+        )
+    
+    async def event_generator():
+        try:
+            # 构建结构化提示词
+            structured_prompt = build_structured_prompt(request, 0, [])
+            
+            # 构建请求数据
+            data = {
+                "model": "deepseek-reasoner",
+                "messages": [
+                    {"role": "system", "content": request.system_prompt},
+                    {"role": "user", "content": structured_prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 4000,
+                "stream": True,  # 启用流式输出
+                "response_format": {
+                    "type": "json_object"  # 强制 JSON 输出
+                }
+            }
+            
+            # 发送流式请求
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                async with client.stream(
+                    "POST",
+                    "https://api.deepseek.com/chat/completions",
+                    json=data,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {deepseek_key}"
+                    }
+                ) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        yield f"data: {json.dumps({'error': f'API 错误: {response.status_code}'})}\n\n"
+                        return
+                    
+                    # 读取流式响应
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]  # 移除 "data: " 前缀
+                            
+                            if data_str.strip() == "[DONE]":
+                                yield f"data: {json.dumps({'done': True})}\n\n"
+                                break
+                            
+                            try:
+                                chunk = json.loads(data_str)
+                                delta = chunk.get("choices", [{}])[0].get("delta", {})
+                                
+                                # 推理过程（reasoning_content）
+                                if "reasoning_content" in delta:
+                                    reasoning = delta["reasoning_content"]
+                                    yield f"data: {json.dumps({'type': 'reasoning', 'content': reasoning})}\n\n"
+                                
+                                # 最终内容（content）
+                                if "content" in delta:
+                                    content = delta["content"]
+                                    yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
+                                
+                            except json.JSONDecodeError:
+                                continue
+                        
+                        await asyncio.sleep(0)  # 让出控制权
+                        
+        except Exception as e:
+            logger.error(f"流式生成失败: {str(e)}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # 禁用 Nginx 缓冲
+        }
+    )
