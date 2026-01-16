@@ -1,13 +1,17 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
-from app.models.schemas import MixRequest, MultiMixRequest, MagicFillRequest
+from app.models.schemas import MixRequest, MultiMixRequest, MagicFillRequest, BeatSyncRequest
 from app.services.audio_service import AudioService
 from app.services.piapi_service import piapi_service
+from app.services.beat_sync_service import BeatSyncService
+from app.services.transition_optimizer import transition_optimizer
 from app.core.config import settings
 import os
+import uuid
 
 router = APIRouter()
 audio_service = AudioService()
+beat_sync_service = BeatSyncService()
 
 @router.post("/mix")
 async def create_mix(request: MixRequest):
@@ -264,3 +268,136 @@ async def test_piapi():
             "success": False,
             "message": str(e)
         }
+
+
+@router.post("/beatsync/process")
+async def beatsync_transition(request: BeatSyncRequest):
+    """
+    节拍对齐过渡 - 使用智能节拍检测进行对齐
+    
+    流程：
+    1. 截取两段音频片段
+    2. 检测节拍和 BPM
+    3. 在节拍点进行对齐和过渡
+    4. 返回处理后的音频
+    """
+    try:
+        # 1. 获取源音频文件
+        file1_path = os.path.join(settings.UPLOAD_DIR, request.audio1_file_id)
+        file2_path = os.path.join(settings.UPLOAD_DIR, request.audio2_file_id)
+        
+        if not os.path.exists(file1_path):
+            raise HTTPException(status_code=404, detail=f"Audio file not found: {request.audio1_file_id}")
+        if not os.path.exists(file2_path):
+            raise HTTPException(status_code=404, detail=f"Audio file not found: {request.audio2_file_id}")
+        
+        # 2. 截取片段
+        segment1_path = await audio_service.extract_segment(
+            file1_path,
+            request.audio1_start,
+            request.audio1_end
+        )
+        
+        segment2_path = await audio_service.extract_segment(
+            file2_path,
+            request.audio2_start,
+            request.audio2_end
+        )
+        
+        # 3. 执行节拍对齐
+        result_audio, sync_info = await beat_sync_service.sync_and_transition(
+            segment1_path,
+            segment2_path,
+            request.transition_beats
+        )
+        
+        # 4. 保存结果
+        output_id = f"{uuid.uuid4()}.mp3"
+        output_path = os.path.join(settings.OUTPUT_DIR, output_id)
+        result_audio.export(output_path, format="mp3", bitrate="320k")
+        
+        return {
+            "success": sync_info.get('success', True),
+            "output_id": output_id,
+            "sync_info": sync_info,
+            "message": "Beat sync transition created successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/transition/analyze")
+async def analyze_transition_compatibility(
+    audio1_file_id: str,
+    audio2_file_id: str,
+    transition_type: str = "beatsync"
+):
+    """
+    分析两段音频的过渡兼容性
+    
+    Args:
+        audio1_file_id: 第一段音频文件 ID
+        audio2_file_id: 第二段音频文件 ID
+        transition_type: 过渡类型 (beatsync, crossfade)
+    """
+    try:
+        file1_path = os.path.join(settings.UPLOAD_DIR, audio1_file_id)
+        file2_path = os.path.join(settings.UPLOAD_DIR, audio2_file_id)
+        
+        if not os.path.exists(file1_path):
+            raise HTTPException(status_code=404, detail=f"Audio file not found: {audio1_file_id}")
+        if not os.path.exists(file2_path):
+            raise HTTPException(status_code=404, detail=f"Audio file not found: {audio2_file_id}")
+        
+        result = await transition_optimizer.analyze_compatibility(
+            file1_path,
+            file2_path,
+            transition_type
+        )
+        
+        return {
+            "success": True,
+            "analysis": result
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/transition/recommend")
+async def recommend_transition(
+    audio1_file_id: str,
+    audio2_file_id: str,
+    user_preference: str = None
+):
+    """
+    推荐最佳过渡方案
+    
+    Args:
+        audio1_file_id: 第一段音频文件 ID
+        audio2_file_id: 第二段音频文件 ID
+        user_preference: 用户偏好的过渡类型（可选）
+    """
+    try:
+        file1_path = os.path.join(settings.UPLOAD_DIR, audio1_file_id)
+        file2_path = os.path.join(settings.UPLOAD_DIR, audio2_file_id)
+        
+        if not os.path.exists(file1_path):
+            raise HTTPException(status_code=404, detail=f"Audio file not found: {audio1_file_id}")
+        if not os.path.exists(file2_path):
+            raise HTTPException(status_code=404, detail=f"Audio file not found: {audio2_file_id}")
+        
+        result = await transition_optimizer.recommend_transition(
+            file1_path,
+            file2_path,
+            user_preference
+        )
+        
+        return {
+            "success": True,
+            "recommendation": result
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

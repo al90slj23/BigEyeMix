@@ -33,6 +33,16 @@ class MagicFillRequest(BaseModel):
     extend_duration: int = Field(5, ge=1, le=30, description="扩展时长（秒）")
     style_prompt: str = Field("", description="风格提示词")
 
+class BeatSyncRequest(BaseModel):
+    """节拍对齐请求 - 在节拍点进行智能对齐和过渡"""
+    audio1_file_id: str = Field(..., description="第一段音频文件 ID")
+    audio1_start: float = Field(0, ge=0, description="第一段开始时间")
+    audio1_end: float = Field(..., ge=0, description="第一段结束时间")
+    audio2_file_id: str = Field(..., description="第二段音频文件 ID")
+    audio2_start: float = Field(0, ge=0, description="第二段开始时间")
+    audio2_end: float = Field(..., ge=0, description="第二段结束时间")
+    transition_beats: int = Field(4, ge=1, le=16, description="过渡节拍数")
+
 class AudioInfo(BaseModel):
     duration: float
     sample_rate: int
