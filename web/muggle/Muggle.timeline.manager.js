@@ -53,6 +53,18 @@ class TimelineManager {
                 const clipEnd = item.customEnd !== undefined ? item.customEnd : clip.end;
                 const clipDuration = clipEnd - clipStart;
                 
+                // 检查前一个是否是 crossfade（影响当前片段的开头）
+                const prevItem = i > 0 ? this.timeline[i - 1] : null;
+                const hasCrossfadeBefore = prevItem && 
+                                          prevItem.type === 'transition' && 
+                                          (prevItem.transitionType === 'crossfade' || prevItem.transitionType === 'beatsync');
+                
+                // 检查后一个是否是 crossfade（影响当前片段的结尾）
+                const nextItem = i + 1 < this.timeline.length ? this.timeline[i + 1] : null;
+                const hasCrossfadeAfter = nextItem && 
+                                         nextItem.type === 'transition' && 
+                                         (nextItem.transitionType === 'crossfade' || nextItem.transitionType === 'beatsync');
+                
                 // Clip 完整播放，不分段
                 const computedItem = {
                     ...item,
@@ -65,8 +77,8 @@ class TimelineManager {
                 };
                 this.computedTimeline.push(computedItem);
                 
-                // 添加到播放片段
-                this.playbackSegments.push({
+                // 添加到播放片段，标记是否需要淡入淡出
+                const playbackSegment = {
                     type: 'clip',
                     fileId: track.uploaded.file_id,
                     clipStart: clipStart,
@@ -74,7 +86,27 @@ class TimelineManager {
                     accumulatedStart: currentTime,
                     accumulatedEnd: currentTime + clipDuration,
                     duration: clipDuration
-                });
+                };
+                
+                // 如果前面有 crossfade，标记需要淡入
+                if (hasCrossfadeBefore && prevItem.transitionData) {
+                    playbackSegment.fadeIn = {
+                        duration: prevItem.duration / 2,  // 淡入时长（crossfade 的一半）
+                        startTime: 0  // 从片段开头开始淡入
+                    };
+                    this.log(`[TimelineManager] Clip ${i} will fade in for ${playbackSegment.fadeIn.duration}s`);
+                }
+                
+                // 如果后面有 crossfade，标记需要淡出
+                if (hasCrossfadeAfter && nextItem.transitionData) {
+                    playbackSegment.fadeOut = {
+                        duration: nextItem.duration / 2,  // 淡出时长（crossfade 的一半）
+                        startTime: clipDuration - (nextItem.duration / 2)  // 从片段结尾前开始淡出
+                    };
+                    this.log(`[TimelineManager] Clip ${i} will fade out for ${playbackSegment.fadeOut.duration}s starting at ${playbackSegment.fadeOut.startTime}s`);
+                }
+                
+                this.playbackSegments.push(playbackSegment);
                 
                 currentTime += clipDuration;
                 

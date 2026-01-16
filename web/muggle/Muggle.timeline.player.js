@@ -210,9 +210,72 @@ class PreviewPlayer {
         
         const source = this.audioContext.createBufferSource();
         source.buffer = buffer;
-        source.connect(this.audioContext.destination);
-        source.start(scheduleTime, offset, duration);
         
+        // 检查是否需要应用淡入淡出效果
+        if (segment.fadeIn || segment.fadeOut) {
+            // 创建 GainNode 来控制音量
+            const gainNode = this.audioContext.createGain();
+            source.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            // 默认音量为 1
+            gainNode.gain.setValueAtTime(1, scheduleTime);
+            
+            // 应用淡入效果
+            if (segment.fadeIn && offset < segment.fadeIn.duration) {
+                // 如果从片段中间开始播放，需要调整淡入
+                const fadeInRemaining = segment.fadeIn.duration - offset;
+                if (fadeInRemaining > 0) {
+                    const fadeInProgress = offset / segment.fadeIn.duration;
+                    const startGain = fadeInProgress;  // 根据进度计算起始音量
+                    
+                    gainNode.gain.setValueAtTime(startGain, scheduleTime);
+                    gainNode.gain.linearRampToValueAtTime(1, scheduleTime + fadeInRemaining);
+                    
+                    this.log(`[Player] Segment ${index} fade-in: ${startGain.toFixed(2)} -> 1.0 over ${fadeInRemaining.toFixed(3)}s`);
+                } else {
+                    // 已经过了淡入阶段，正常音量
+                    gainNode.gain.setValueAtTime(1, scheduleTime);
+                }
+            }
+            
+            // 应用淡出效果
+            if (segment.fadeOut) {
+                const fadeOutStartInSegment = segment.fadeOut.startTime;
+                const fadeOutStartInPlayback = fadeOutStartInSegment - offset;
+                
+                if (fadeOutStartInPlayback < duration && fadeOutStartInPlayback >= 0) {
+                    // 淡出在播放范围内
+                    const fadeOutDuration = Math.min(segment.fadeOut.duration, duration - fadeOutStartInPlayback);
+                    const fadeOutStartTime = scheduleTime + fadeOutStartInPlayback;
+                    
+                    gainNode.gain.setValueAtTime(1, fadeOutStartTime);
+                    gainNode.gain.linearRampToValueAtTime(0, fadeOutStartTime + fadeOutDuration);
+                    
+                    this.log(`[Player] Segment ${index} fade-out: 1.0 -> 0.0 over ${fadeOutDuration.toFixed(3)}s starting at +${fadeOutStartInPlayback.toFixed(3)}s`);
+                } else if (fadeOutStartInPlayback < 0) {
+                    // 从淡出中间开始播放
+                    const fadeOutProgress = -fadeOutStartInPlayback / segment.fadeOut.duration;
+                    const startGain = 1 - fadeOutProgress;
+                    const fadeOutRemaining = segment.fadeOut.duration + fadeOutStartInPlayback;
+                    
+                    if (fadeOutRemaining > 0) {
+                        gainNode.gain.setValueAtTime(startGain, scheduleTime);
+                        gainNode.gain.linearRampToValueAtTime(0, scheduleTime + fadeOutRemaining);
+                        
+                        this.log(`[Player] Segment ${index} fade-out (partial): ${startGain.toFixed(2)} -> 0.0 over ${fadeOutRemaining.toFixed(3)}s`);
+                    } else {
+                        // 已经完全淡出
+                        gainNode.gain.setValueAtTime(0, scheduleTime);
+                    }
+                }
+            }
+        } else {
+            // 没有淡入淡出，直接连接
+            source.connect(this.audioContext.destination);
+        }
+        
+        source.start(scheduleTime, offset, duration);
         this.activeSources.push(source);
         
         this.log(`[Player] Segment ${index} (clip): scheduled at ${scheduleTime.toFixed(3)}s (delay: ${(scheduleTime - this.playbackStartTime).toFixed(3)}s), offset: ${offset.toFixed(3)}s, duration: ${duration.toFixed(3)}s, accumulated: ${segment.accumulatedStart.toFixed(3)}s`);
