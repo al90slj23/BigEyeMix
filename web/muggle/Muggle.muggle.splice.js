@@ -292,6 +292,15 @@ async function generateSpliceInstructionsStream(userDescription, context, thinki
                             } else if (data.type === 'content') {
                                 // 最终内容
                                 contentText += data.content;
+                            } else if (data.type === 'extract_from_reasoning') {
+                                // 后端告诉我们：content 为空，需要从 reasoning 中提取 JSON
+                                console.log('[Stream] 后端指示从 reasoning 中提取 JSON');
+                                // 使用后端发送的完整 reasoning（避免前端累积不完整）
+                                if (data.reasoning) {
+                                    reasoningText = data.reasoning;
+                                }
+                                // 标记需要从 reasoning 提取
+                                contentText = ''; // 清空，强制从 reasoning 提取
                             } else if (data.done) {
                                 // 完成标记
                                 return reader.read().then(processText);

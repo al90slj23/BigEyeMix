@@ -315,7 +315,6 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 
 正确输出：
 {{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:04.00（第1份，共3份）\n- B1a片段：《春颂》00:00.00 - 00:58.00（第1份，共2份）\n- A1b片段：《知我》01:04.00 - 02:08.00（第2份，共3份）\n- B1b片段：《春颂》00:58.00 - 01:56.60（第2份，共2份）\n- A1c片段：《知我》02:08.00 - 03:12.28（第3份，共3份）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1a + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1b + (3.0秒 淡化过渡) + A1c\n\n最终效果：将两段音频分别分割后交替拼接，A和B交替出现，总时长约 05:00.88",
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 64}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
@@ -327,7 +326,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 128, "customEnd": 192.28}}
   ],
-  "estimated_duration": 300.88
+  "estimated_duration": 300.88,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:04.00（第1份，共3份）\n- B1a片段：《春颂》00:00.00 - 00:58.00（第1份，共2份）\n- A1b片段：《知我》01:04.00 - 02:08.00（第2份，共3份）\n- B1b片段：《春颂》00:58.00 - 01:56.60（第2份，共2份）\n- A1c片段：《知我》02:08.00 - 03:12.28（第3份，共3份）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1a + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1b + (3.0秒 淡化过渡) + A1c\n\n最终效果：将两段音频分别分割后交替拼接，A和B交替出现，总时长约 05:00.88"
+}}
 }}
 
 示例2 - 去掉中间某段：
@@ -339,8 +340,7 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - 拼接顺序：A1 + (3s 淡化过渡) + A2 + (3s 淡化过渡) + B1
 
 正确输出：
-{{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 01:56.00\n- A2片段：《知我》02:34.00 - 03:12.28（结尾）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + A2 + (3.0秒 淡化过渡) + B1\n\n最终效果：去掉《知我》中间38秒，保留前后部分，然后与《春颂》完整拼接，总时长约 04:58.88",
+{
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 116}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
@@ -348,8 +348,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "B", "clipId": "1"}}
   ],
-  "estimated_duration": 298.88
-}}
+  "estimated_duration": 298.88,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 01:56.00\n- A2片段：《知我》02:34.00 - 03:12.28（结尾）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + A2 + (3.0秒 淡化过渡) + B1\n\n最终效果：去掉《知我》中间38秒，保留前后部分，然后与《春颂》完整拼接，总时长约 04:58.88"
+}
 
 示例2 - 去掉中间某段：
 用户："《知我》1分56～2分34这一段不要，剩下的部分《知我》＋《春颂》（整段）"
@@ -360,8 +361,7 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - 拼接顺序：A1 + (3s 淡化过渡) + A2 + (3s 淡化过渡) + B1
 
 正确输出：
-{{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 01:56.00\n- A2片段：《知我》02:34.00 - 03:12.28（结尾）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + A2 + (3.0秒 淡化过渡) + B1\n\n最终效果：去掉《知我》中间38秒，保留前后部分，然后与《春颂》完整拼接，总时长约 04:58.88",
+{
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 116}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
@@ -369,8 +369,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "B", "clipId": "1"}}
   ],
-  "estimated_duration": 298.88
-}}
+  "estimated_duration": 298.88,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 01:56.00\n- A2片段：《知我》02:34.00 - 03:12.28（结尾）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + A2 + (3.0秒 淡化过渡) + B1\n\n最终效果：去掉《知我》中间38秒，保留前后部分，然后与《春颂》完整拼接，总时长约 04:58.88"
+}
 
 示例3 - 完整拼接：
 用户："《知我》全部 + 《春颂》全部"
@@ -380,15 +381,15 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - 拼接顺序：A1 + (3s 淡化过渡) + B1
 
 正确输出：
-{{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 03:12.28（完整）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + B1\n\n最终效果：两段音频完整拼接，总时长约 05:05.88",
+{
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1"}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "B", "clipId": "1"}}
   ],
-  "estimated_duration": 305.88
-}}
+  "estimated_duration": 305.88,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 03:12.28（完整）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + B1\n\n最终效果：两段音频完整拼接，总时长约 05:05.88"
+}
 
 示例3 - 完整拼接：
 用户："《知我》全部 + 《春颂》全部"
@@ -398,15 +399,15 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - 拼接顺序：A1 + (3s 淡化过渡) + B1
 
 正确输出：
-{{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 03:12.28（完整）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + B1\n\n最终效果：两段音频完整拼接，总时长约 05:05.88",
+{
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1"}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "B", "clipId": "1"}}
   ],
-  "estimated_duration": 305.88
-}}
+  "estimated_duration": 305.88,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 03:12.28（完整）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + B1\n\n最终效果：两段音频完整拼接，总时长约 05:05.88"
+}
 
 示例4 - 分段插入（重要）：
 用户："把第一段音频分成1分钟、1分钟、1分钟这样的间隔，然后在每个中间都加入第二段音频"
@@ -416,8 +417,7 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - 拼接顺序：A1a + B1 + A1b + B1 + A1c
 
 正确输出：
-{{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:00.00\n- A1b片段：《知我》01:00.00 - 02:00.00\n- A1c片段：《知我》02:00.00 - 03:00.00\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1 + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1 + (3.0秒 淡化过渡) + A1c\n\n最终效果：将《知我》分成3个1分钟片段，在每个片段之间插入《春颂》完整音频，总时长约 06:45.20",
+{
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 60}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
@@ -429,8 +429,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 120, "customEnd": 180}}
   ],
-  "estimated_duration": 405.2
-}}
+  "estimated_duration": 405.2,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:00.00\n- A1b片段：《知我》01:00.00 - 02:00.00\n- A1c片段：《知我》02:00.00 - 03:00.00\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1 + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1 + (3.0秒 淡化过渡) + A1c\n\n最终效果：将《知我》分成3个1分钟片段，在每个片段之间插入《春颂》完整音频，总时长约 06:45.20"
+}
 
 示例4 - 分段插入（静音间隔）：
 用户："把第一段音频每隔30秒加入2秒静音"
@@ -440,8 +441,7 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - 拼接顺序：A1a(0~30s) + 2s静音 + A1b(30~60s) + 2s静音 + A1c(60~90s) + ...
 
 正确输出：
-{{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 00:30.00\n- A1b片段：《知我》00:30.00 - 01:00.00\n- A1c片段：《知我》01:00.00 - 01:30.00\n- A1d片段：《知我》01:30.00 - 02:00.00\n\n拼接顺序：\nA1a + (2.0秒 静音填充) + A1b + (2.0秒 静音填充) + A1c + (2.0秒 静音填充) + A1d\n\n最终效果：将《知我》每隔30秒插入2秒静音，总时长约 02:06.00",
+{
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 30}},
     {{"type": "transition", "transitionType": "silence", "duration": 2}},
@@ -451,8 +451,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     {{"type": "transition", "transitionType": "silence", "duration": 2}},
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 90, "customEnd": 120}}
   ],
-  "estimated_duration": 126
-}}
+  "estimated_duration": 126,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 00:30.00\n- A1b片段：《知我》00:30.00 - 01:00.00\n- A1c片段：《知我》01:00.00 - 01:30.00\n- A1d片段：《知我》01:30.00 - 02:00.00\n\n拼接顺序：\nA1a + (2.0秒 静音填充) + A1b + (2.0秒 静音填充) + A1c + (2.0秒 静音填充) + A1d\n\n最终效果：将《知我》每隔30秒插入2秒静音，总时长约 02:06.00"
+}
 
 示例5 - 分成N份然后交替摆开（关键）：
 用户："把第一段分成3份，把第二段分成2份，然后把他们交替摆开"
@@ -462,8 +463,7 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - 交替摆开：A1a + B1a + A1b + B1b + A1c
 
 正确输出：
-{{
-  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:04.00（第1份）\n- B1a片段：《春颂》00:00.00 - 00:58.00（第1份）\n- A1b片段：《知我》01:04.00 - 02:08.00（第2份）\n- B1b片段：《春颂》00:58.00 - 01:56.60（第2份）\n- A1c片段：《知我》02:08.00 - 03:12.28（第3份）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1a + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1b + (3.0秒 淡化过渡) + A1c\n\n最终效果：将两段音频分别分割后交替拼接，总时长约 05:00.88",
+{
   "instructions": [
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 64}},
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
@@ -475,8 +475,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 128, "customEnd": 192.28}}
   ],
-  "estimated_duration": 300.88
-}}
+  "estimated_duration": 300.88,
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:04.00（第1份）\n- B1a片段：《春颂》00:00.00 - 00:58.00（第1份）\n- A1b片段：《知我》01:04.00 - 02:08.00（第2份）\n- B1b片段：《春颂》00:58.00 - 01:56.60（第2份）\n- A1c片段：《知我》02:08.00 - 03:12.28（第3份）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1a + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1b + (3.0秒 淡化过渡) + A1c\n\n最终效果：将两段音频分别分割后交替拼接，总时长约 05:00.88"
+}
 
 输出格式要求：
 1. **你的推理过程会自动显示给用户**，所以请在推理时详细思考：
@@ -485,9 +486,9 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
    - 如何交替排列
    - 时长如何计算
    
-2. **最终输出必须是纯 JSON 格式**，包含两个字段：
-   - `explanation`: 给人类看的详细说明（包含片段定义、拼接顺序、最终效果）
-   - `instructions`: 给程序使用的标准 JSON 指令数组
+2. **最终输出必须是纯 JSON 格式**，包含两个字段（按顺序）：
+   - `instructions`: 【第一部分】给程序使用的标准 JSON 指令数组（优先输出，让程序快速处理）
+   - `explanation`: 【第二部分】给人类看的详细说明（包含片段定义、拼接顺序、最终效果）
    - `estimated_duration`: 精确计算的总时长（数字）
 
 3. **explanation 格式要求**：
@@ -504,9 +505,13 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 请严格按照以下 JSON 格式输出（不要添加 markdown 代码块标记）：
 
 {{
-  "explanation": "详细的拼接方案说明...",
-  "instructions": [...],
-  "estimated_duration": 数值
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 64}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    ...
+  ],
+  "estimated_duration": 数值,
+  "explanation": "详细的拼接方案说明..."
 }}"""
 
     return prompt
@@ -871,12 +876,22 @@ async def generate_muggle_splice_stream(request: MuggleSpliceRequest):
                         yield f"data: {json.dumps({'error': f'API 错误: {response.status_code}'})}\n\n"
                         return
                     
+                    # 累积推理内容和最终内容
+                    accumulated_reasoning = ""
+                    accumulated_content = ""
+                    
                     # 读取流式响应
                     async for line in response.aiter_lines():
                         if line.startswith("data: "):
                             data_str = line[6:]  # 移除 "data: " 前缀
                             
                             if data_str.strip() == "[DONE]":
+                                # 流结束，检查是否需要从 reasoning 中提取 JSON
+                                if not accumulated_content or accumulated_content.strip() == "" or "null" in accumulated_content:
+                                    logger.info(f"content 为空或包含 null，尝试从 reasoning 中提取 JSON")
+                                    # 发送一个特殊标记，告诉前端从 reasoning 中提取
+                                    yield f"data: {json.dumps({'type': 'extract_from_reasoning', 'reasoning': accumulated_reasoning})}\n\n"
+                                
                                 yield f"data: {json.dumps({'done': True})}\n\n"
                                 break
                             
@@ -887,12 +902,16 @@ async def generate_muggle_splice_stream(request: MuggleSpliceRequest):
                                 # 推理过程（reasoning_content）
                                 if "reasoning_content" in delta:
                                     reasoning = delta["reasoning_content"]
+                                    accumulated_reasoning += reasoning
                                     yield f"data: {json.dumps({'type': 'reasoning', 'content': reasoning})}\n\n"
                                 
                                 # 最终内容（content）
                                 if "content" in delta:
                                     content = delta["content"]
-                                    yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
+                                    # 过滤掉 null 值
+                                    if content and content.strip() and content.strip() != "null":
+                                        accumulated_content += content
+                                        yield f"data: {json.dumps({'type': 'content', 'content': content})}\n\n"
                                 
                             except json.JSONDecodeError:
                                 continue
