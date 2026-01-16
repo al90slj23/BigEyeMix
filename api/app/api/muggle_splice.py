@@ -32,8 +32,8 @@ class InstructionType(str, Enum):
 # 片段指令模型
 class ClipInstruction(BaseModel):
     type: Literal["clip"] = "clip"
-    trackId: str = Field(..., description="轨道ID")
-    clipId: str = Field(..., description="片段ID")
+    trackId: Union[str, int] = Field(..., description="轨道ID（支持数字或字符串）")
+    clipId: Union[str, int] = Field(..., description="片段ID（支持数字或字符串）")
     customStart: Optional[float] = Field(None, description="自定义开始时间（秒）")
     customEnd: Optional[float] = Field(None, description="自定义结束时间（秒）")
     
@@ -568,15 +568,56 @@ def validate_semantic_logic(response: StructuredAIResponse, context: Dict[str, A
     # 验证轨道和片段引用的有效性
     for instruction in response.instructions:
         if instruction.type == "clip":
-            if instruction.trackId not in valid_track_identifiers:
+            # 支持通过 ID（数字或字符串）或 label 查找轨道
+            instruction_track_id = instruction.trackId
+            instruction_track_id_str = str(instruction.trackId)
+            try:
+                instruction_track_id_int = int(instruction.trackId)
+            except (ValueError, TypeError):
+                instruction_track_id_int = None
+            
+            # 检查轨道是否存在
+            track_found = (
+                instruction_track_id in valid_track_identifiers or
+                instruction_track_id_str in track_labels or
+                (instruction_track_id_int is not None and instruction_track_id_int in track_ids)
+            )
+            
+            if not track_found:
                 errors.append(f"引用了不存在的轨道ID: {instruction.trackId}")
                 continue
             
-            # 查找对应轨道（支持通过 ID 或 label 查找）
-            track = next((t for t in tracks if t["id"] == instruction.trackId or t["label"] == instruction.trackId), None)
+            # 查找对应轨道（支持通过 ID 或 label 查找，支持数字和字符串）
+            track = None
+            for t in tracks:
+                if (t["id"] == instruction.trackId or 
+                    t["label"] == instruction.trackId or
+                    str(t["id"]) == str(instruction.trackId) or
+                    t["label"] == str(instruction.trackId)):
+                    track = t
+                    break
+            
             if track:
+                # 同时支持数字和字符串类型的 clipId
                 clip_ids = {clip["id"] for clip in track.get("clips", [])}
-                if instruction.clipId not in clip_ids:
+                clip_ids_str = {str(clip["id"]) for clip in track.get("clips", [])}
+                
+                # 将 instruction.clipId 转换为字符串和数字进行比较
+                instruction_clip_id = instruction.clipId
+                instruction_clip_id_str = str(instruction.clipId)
+                try:
+                    instruction_clip_id_int = int(instruction.clipId)
+                except (ValueError, TypeError):
+                    instruction_clip_id_int = None
+                
+                # 检查 clipId 是否存在（支持数字或字符串）
+                clip_found = (
+                    instruction_clip_id in clip_ids or 
+                    instruction_clip_id_str in clip_ids_str or
+                    (instruction_clip_id_int is not None and instruction_clip_id_int in clip_ids)
+                )
+                
+                if not clip_found:
                     errors.append(f"轨道 {instruction.trackId} 中不存在片段ID: {instruction.clipId}")
     
     # 验证时长估算的合理性

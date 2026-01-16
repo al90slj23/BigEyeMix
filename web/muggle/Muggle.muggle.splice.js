@@ -255,7 +255,25 @@ ${context.availableTransitions.map(t => `- ${t.name} (${t.type}): ${t.descriptio
         });
 
         if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status}`);
+            // 尝试获取详细的错误信息
+            let errorDetail = `${response.status}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorDetail += ` - ${errorData.detail}`;
+                }
+            } catch (e) {
+                // 如果无法解析 JSON，尝试获取文本
+                try {
+                    const errorText = await response.text();
+                    if (errorText) {
+                        errorDetail += ` - ${errorText.substring(0, 200)}`;
+                    }
+                } catch (e2) {
+                    // 忽略
+                }
+            }
+            throw new Error(`API请求失败: ${errorDetail}`);
         }
 
         const result = await response.json();
