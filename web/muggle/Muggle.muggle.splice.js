@@ -234,11 +234,14 @@ ${context.availableTransitions.map(t => `- ${t.name} (${t.type}): ${t.descriptio
 2. 指令序列必须以clip开始
 3. 不能有连续的transition指令
 4. 处理时长必须为正数且≤30秒
-5. crossfade和beatsync会减少总时长，magicfill和silence会增加总时长
+5. **只处理用户明确要求的部分，不要自动添加音频的剩余部分**
+6. **crossfade和beatsync是音量过渡效果（前段结尾淡出+后段开头淡入），不改变总时长**
+7. **magicfill和silence是硬填充，会增加总时长**
+8. 总时长计算：所有clip时长之和 + magicfill/silence时长之和（crossfade/beatsync不计入）
 
 只返回JSON，不要添加其他说明文字。`;
 
-    const systemPrompt = `你是专业的音频拼接专家，擅长理解用户的自然语言描述并转换为结构化的音频拼接指令。你必须严格按照JSON格式返回结果，确保所有指令都是可执行的。`;
+    const systemPrompt = `你是专业的音频拼接专家，擅长理解用户的自然语言描述并转换为结构化的音频拼接指令。你必须严格按照JSON格式返回结果，确保所有指令都是可执行的。重要：只处理用户明确要求的部分，不要自作主张添加额外内容。`;
 
     try {
         const response = await fetch('/api/ai/splice', {
