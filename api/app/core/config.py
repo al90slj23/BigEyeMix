@@ -1,5 +1,10 @@
 from pydantic_settings import BaseSettings
 from typing import List
+import os
+from pathlib import Path
+
+# 获取 api 目录的绝对路径
+API_DIR = Path(__file__).resolve().parent.parent.parent
 
 class Settings(BaseSettings):
     UPLOAD_DIR: str = "./data/uploads"
@@ -29,6 +34,7 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.CORS_ORIGINS.split(',')]
     
     class Config:
-        env_file = ".env"
+        env_file = str(API_DIR / ".env")
+        env_file_encoding = 'utf-8'
 
 settings = Settings()
