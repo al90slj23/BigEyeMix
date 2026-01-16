@@ -305,23 +305,31 @@ async function handleMuggleApply() {
     }
     
     try {
+        // 隐藏应用按钮，显示加载状态
+        const applyBtn = document.getElementById('muggleApplyBtn');
+        const regenerateBtn = document.getElementById('muggleRegenerateBtn');
+        if (applyBtn) {
+            applyBtn.disabled = true;
+            applyBtn.innerHTML = '<i data-lucide="loader"></i> 应用中...';
+            refreshIcons();
+        }
+        if (regenerateBtn) regenerateBtn.style.display = 'none';
+        
         // 应用拼接方案到时间轴
         await applyMuggleSpliceResult(muggleSpliceState.lastResult);
         
-        // 不切换标签页，直接在麻瓜拼接标签页下显示预览
         // 显示预览区域
         const previewWrapper = document.getElementById('previewSectionWrapper');
         if (previewWrapper) {
             previewWrapper.style.display = 'block';
+            // 等待一下让 DOM 更新
+            await new Promise(resolve => setTimeout(resolve, 100));
             // 滚动到预览区域
             previewWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
         
-        // 隐藏应用按钮，显示成功提示
-        const applyBtn = document.getElementById('muggleApplyBtn');
-        const regenerateBtn = document.getElementById('muggleRegenerateBtn');
+        // 隐藏应用按钮
         if (applyBtn) applyBtn.style.display = 'none';
-        if (regenerateBtn) regenerateBtn.style.display = 'none';
         
         // 在结果区域添加成功提示
         const resultContent = document.getElementById('muggleResultContent');
@@ -335,6 +343,16 @@ async function handleMuggleApply() {
         
     } catch (error) {
         console.error('应用拼接方案失败:', error);
+        
+        // 恢复按钮状态
+        const applyBtn = document.getElementById('muggleApplyBtn');
+        if (applyBtn) {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = '<i data-lucide="play"></i> 应用方案';
+            applyBtn.style.display = 'inline-block';
+            refreshIcons();
+        }
+        
         alert('应用失败: ' + error.message);
     }
 }
