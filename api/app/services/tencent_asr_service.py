@@ -28,8 +28,11 @@ class TencentASRService:
                 from tencentcloud.common.profile.http_profile import HttpProfile
                 from tencentcloud.asr.v20190614 import asr_client, models
                 
+                logger.info("开始初始化腾讯云 ASR 客户端...")
+                
                 # 实例化认证对象
                 cred = credential.Credential(self.secret_id, self.secret_key)
+                logger.info("认证对象创建成功")
                 
                 # 实例化 HTTP 配置
                 httpProfile = HttpProfile()
@@ -49,6 +52,10 @@ class TencentASRService:
                 logger.error("请运行: pip install tencentcloud-sdk-python-asr")
             except Exception as e:
                 logger.error(f"腾讯云 ASR SDK 初始化失败: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+        else:
+            logger.warning(f"腾讯云密钥未配置: SecretId={self.secret_id}, SecretKey={'***' if self.secret_key else None}")
     
     async def recognize_audio(self, audio_data: bytes, audio_format: str = 'wav') -> dict:
         """
