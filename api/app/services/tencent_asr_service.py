@@ -2,9 +2,9 @@
 腾讯云语音识别服务（使用官方 SDK）
 BigEyeMix 音频拼接平台
 """
-import os
 import base64
 import logging
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +12,9 @@ class TencentASRService:
     """腾讯云一句话识别服务"""
     
     def __init__(self):
-        self.secret_id = os.getenv('TENCENT_SECRET_ID')
-        self.secret_key = os.getenv('TENCENT_SECRET_KEY')
-        self.app_id = os.getenv('TENCENT_APP_ID')
+        self.secret_id = settings.TENCENT_SECRET_ID
+        self.secret_key = settings.TENCENT_SECRET_KEY
+        self.app_id = settings.TENCENT_APP_ID
         
         # 调试日志
         logger.info(f"腾讯云 ASR 初始化: SecretId={'已配置' if self.secret_id else '未配置'}, SecretKey={'已配置' if self.secret_key else '未配置'}, AppId={self.app_id or '未配置'}")
