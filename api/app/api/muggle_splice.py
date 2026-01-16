@@ -108,8 +108,9 @@ async def generate_muggle_splice(request: MuggleSpliceRequest):
     for retry_count in range(max_retries):
         try:
             # 获取 DeepSeek API 密钥
-            deepseek_key = os.getenv('APIKEY_MacOS_Code_DeepSeek')
-            moonshot_key = os.getenv('APIKEY_MacOS_Code_MoonShot')
+            from app.core.config import settings
+            deepseek_key = settings.APIKEY_MacOS_Code_DeepSeek
+            moonshot_key = settings.APIKEY_MacOS_Code_MoonShot
             
             if not deepseek_key and not moonshot_key:
                 logger.warning("未配置 AI API 密钥，使用模拟响应")
@@ -212,6 +213,26 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     # 构建结构化提示词
     prompt = f"""你是专业的音频拼接专家。请根据用户描述生成详细的拼接方案。
 
+⚠️ 关键理解规则（必读）：
+
+1. **"分成N份"的正确理解：**
+   - ❌ 错误：使用完整的音频（trackId: "A", clipId: "1"）
+   - ✅ 正确：生成N个独立的clip指令，每个都有customStart和customEnd
+   - 例如：A1总时长180s，"分成3份" → 生成3个clip：
+     * clip1: trackId="A", clipId="1", customStart=0, customEnd=60
+     * clip2: trackId="A", clipId="1", customStart=60, customEnd=120
+     * clip3: trackId="A", clipId="1", customStart=120, customEnd=180
+
+2. **"交替"、"摆开"、"穿插"的正确理解：**
+   - ❌ 错误：A完整 + B完整（只有2个clip）
+   - ✅ 正确：A1 + B1 + A2 + B2 + A3（5个clip交替）
+   - 必须生成交替的指令序列，不是简单拼接
+
+3. **同时有"分成"和"交替"时：**
+   - 先分割每个音频
+   - 再按顺序交替排列
+   - 例如：A分3份，B分2份，交替 → A1 + B1 + A2 + B2 + A3
+
 {retry_feedback}
 
 可用音频资源：
@@ -225,18 +246,55 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
 - magicfill (魔法填充): AI生成过渡音频，会增加总时长
 - silence (静音填充): 插入静音间隔，会增加总时长
 
-重要规则：
+详细规则：
 1. 必须返回有效的JSON格式
 2. 指令序列必须以clip开始，不能以transition开始
 3. 不能有连续的transition指令
 4. 时长必须为正数且合理（≤30秒）
 5. 必须包含至少一个clip指令
-6. **当用户说"去掉某段"或"不要某段"时，需要将该音频拆分成两个clip指令：**
+
+6. **当用户说"分成N份"时，必须将音频分割成N个片段：**
+   - 计算每份的时长：总时长 / N
+   - 为每份创建独立的clip指令，使用customStart和customEnd
+   - 例如：A1总时长180s，分成3份 → A1a(0~60s), A1b(60~120s), A1c(120~180s)
+   - 注意：这是3个独立的clip指令，不是1个完整的clip
+
+7. **当用户说"去掉某段"或"不要某段"时，需要将该音频拆分成两个clip指令：**
    - 第一个clip：从开始到去掉部分的开始时间（使用customStart和customEnd）
    - 第二个clip：从去掉部分的结束时间到音频结尾（使用customStart和customEnd）
    - 例如：去掉1:56~2:34，则生成两个clip：0~1:56 和 2:34~结尾
 
-示例1 - 去掉中间某段：
+8. **当用户说"摆开"、"交替"、"穿插"、"间隔"时，必须生成交替的指令序列：**
+   - 不是简单的 A + B 拼接
+   - 而是 A1 + B1 + A2 + B2 + A3 的交替模式
+   - 在每个clip之间添加transition指令
+
+示例1 - 分成N份然后交替摆开（最重要）：
+用户："把第一段分成3份，把第二段分成2份，然后把他们交替摆开"
+正确理解：
+- 将A1分成3份：A1a(0~64s), A1b(64~128s), A1c(128~192s)
+- 将B1分成2份：B1a(0~58s), B1b(58~116s)
+- 交替摆开：A1a + B1a + A1b + B1b + A1c
+- ⚠️ 注意：这是5个clip指令，不是2个！
+
+正确输出：
+{{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:04.00（第1份，共3份）\n- B1a片段：《春颂》00:00.00 - 00:58.00（第1份，共2份）\n- A1b片段：《知我》01:04.00 - 02:08.00（第2份，共3份）\n- B1b片段：《春颂》00:58.00 - 01:56.60（第2份，共2份）\n- A1c片段：《知我》02:08.00 - 03:12.28（第3份，共3份）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1a + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1b + (3.0秒 淡化过渡) + A1c\n\n最终效果：将两段音频分别分割后交替拼接，A和B交替出现，总时长约 05:00.88",
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 64}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1", "customStart": 0, "customEnd": 58}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 64, "customEnd": 128}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1", "customStart": 58, "customEnd": 116.6}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 128, "customEnd": 192.28}}
+  ],
+  "estimated_duration": 300.88
+}}
+
+示例2 - 去掉中间某段：
 用户："《知我》1分56～2分34这一段不要，剩下的部分《知我》＋《春颂》（整段）"
 正确理解：
 - A1片段：《知我》0~1:56
@@ -257,7 +315,28 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
   "estimated_duration": 298.88
 }}
 
-示例2 - 完整拼接：
+示例2 - 去掉中间某段：
+用户："《知我》1分56～2分34这一段不要，剩下的部分《知我》＋《春颂》（整段）"
+正确理解：
+- A1片段：《知我》0~1:56
+- A2片段：《知我》2:34~结尾（AI需要查找A轨道的实际结束时间）
+- B1片段：《春颂》0~结尾（完整）
+- 拼接顺序：A1 + (3s 淡化过渡) + A2 + (3s 淡化过渡) + B1
+
+正确输出：
+{{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 01:56.00\n- A2片段：《知我》02:34.00 - 03:12.28（结尾）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + A2 + (3.0秒 淡化过渡) + B1\n\n最终效果：去掉《知我》中间38秒，保留前后部分，然后与《春颂》完整拼接，总时长约 04:58.88",
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 116}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 154, "customEnd": 192.28}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1"}}
+  ],
+  "estimated_duration": 298.88
+}}
+
+示例3 - 完整拼接：
 用户："《知我》全部 + 《春颂》全部"
 正确理解：
 - A1片段：《知我》0~结尾（完整）
@@ -275,7 +354,25 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
   "estimated_duration": 305.88
 }}
 
-示例3 - 分段插入（重要）：
+示例3 - 完整拼接：
+用户："《知我》全部 + 《春颂》全部"
+正确理解：
+- A1片段：《知我》0~结尾（完整）
+- B1片段：《春颂》0~结尾（完整）
+- 拼接顺序：A1 + (3s 淡化过渡) + B1
+
+正确输出：
+{{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1片段：《知我》00:00.00 - 03:12.28（完整）\n- B1片段：《春颂》00:00.00 - 01:56.60（完整）\n\n拼接顺序：\nA1 + (3.0秒 淡化过渡) + B1\n\n最终效果：两段音频完整拼接，总时长约 05:05.88",
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1"}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1"}}
+  ],
+  "estimated_duration": 305.88
+}}
+
+示例4 - 分段插入（重要）：
 用户："把第一段音频分成1分钟、1分钟、1分钟这样的间隔，然后在每个中间都加入第二段音频"
 正确理解：
 - 将A1分成多个1分钟片段：A1a(0~60s), A1b(60~120s), A1c(120~180s)
@@ -319,6 +416,30 @@ def build_structured_prompt(request: MuggleSpliceRequest, retry_count: int, vali
     {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 90, "customEnd": 120}}
   ],
   "estimated_duration": 126
+}}
+
+示例5 - 分成N份然后交替摆开（关键）：
+用户："把第一段分成3份，把第二段分成2份，然后把他们交替摆开"
+正确理解：
+- 将A1分成3份：A1a(0~64s), A1b(64~128s), A1c(128~192s)
+- 将B1分成2份：B1a(0~58s), B1b(58~116s)
+- 交替摆开：A1a + B1a + A1b + B1b + A1c
+
+正确输出：
+{{
+  "explanation": "根据您的描述，我为您生成了以下拼接方案：\n\n片段定义：\n- A1a片段：《知我》00:00.00 - 01:04.00（第1份）\n- B1a片段：《春颂》00:00.00 - 00:58.00（第1份）\n- A1b片段：《知我》01:04.00 - 02:08.00（第2份）\n- B1b片段：《春颂》00:58.00 - 01:56.60（第2份）\n- A1c片段：《知我》02:08.00 - 03:12.28（第3份）\n\n拼接顺序：\nA1a + (3.0秒 淡化过渡) + B1a + (3.0秒 淡化过渡) + A1b + (3.0秒 淡化过渡) + B1b + (3.0秒 淡化过渡) + A1c\n\n最终效果：将两段音频分别分割后交替拼接，总时长约 05:00.88",
+  "instructions": [
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 0, "customEnd": 64}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1", "customStart": 0, "customEnd": 58}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 64, "customEnd": 128}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "B", "clipId": "1", "customStart": 58, "customEnd": 116.6}},
+    {{"type": "transition", "transitionType": "crossfade", "duration": 3}},
+    {{"type": "clip", "trackId": "A", "clipId": "1", "customStart": 128, "customEnd": 192.28}}
+  ],
+  "estimated_duration": 300.88
 }}
 
 输出格式要求：

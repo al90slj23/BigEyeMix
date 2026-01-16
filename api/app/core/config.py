@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     TENCENT_SECRET_KEY: str = ""
     TENCENT_APP_ID: str = ""
     
+    # AI 配置
+    APIKEY_MacOS_Code_DeepSeek: str = ""
+    APIKEY_MacOS_Code_MoonShot: str = ""
+    
     @property
     def allowed_extensions_list(self) -> List[str]:
         return [ext.strip() for ext in self.ALLOWED_EXTENSIONS.split(',')]
