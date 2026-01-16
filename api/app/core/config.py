@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     # 服务器公网地址（用于 PiAPI 回调访问音频文件）
     SERVER_PUBLIC_URL: str = "https://bem.it.sc.cn"
     
+    # 腾讯云语音识别配置
+    TENCENT_SECRET_ID: str = ""
+    TENCENT_SECRET_KEY: str = ""
+    TENCENT_APP_ID: str = ""
+    
     @property
     def allowed_extensions_list(self) -> List[str]:
         return [ext.strip() for ext in self.ALLOWED_EXTENSIONS.split(',')]
