@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BigEyeMix - 大眼怪の混剪平台</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            padding: 30px 0 40px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+        }
+        
+        .logo i {
+            width: 60px;
+            height: 60px;
+            stroke-width: 1.5;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .modes {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .mode-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px 24px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+        
+        .mode-card:active {
+            transform: scale(0.98);
+        }
+        
+        .mode-card:active::before {
+            transform: scaleX(1);
+        }
+        
+        .mode-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .mode-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        
+        .mode-icon i {
+            width: 28px;
+            height: 28px;
+            color: #667eea;
+            stroke-width: 2;
+        }
+        
+        .mode-info {
+            flex: 1;
+        }
+        
+        .mode-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+            letter-spacing: -0.3px;
+        }
+        
+        .mode-desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .mode-features {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 12px;
+            margin-bottom: 20px;
+        }
+        
+        .mode-features li {
+            color: #555;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .mode-features li i {
+            color: #667eea;
+            margin-right: 6px;
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+        
+        .mode-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .mode-button:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.7;
+            font-size: 12px;
+            padding: 20px 0 10px;
+        }
+        
+        /* 优雅的加载动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .mode-card {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        .mode-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo"><i data-lucide="eye"></i></div>
+        <h1>BigEyeMix</h1>
+        <p class="subtitle">选择你的编辑模式</p>
+    </div>
+    
+    <div class="modes">
+        <!-- 麻瓜模式 -->
+        <div class="mode-card" onclick="location.href='/muggle'">
+            <div class="mode-header">
+                <div class="mode-icon">
+                    <i data-lucide="wand-2"></i>
+                </div>
+                <div class="mode-info">
+                    <h2 class="mode-title">麻瓜模式</h2>
+                    <p class="mode-desc">简单直观，3步完成混音</p>
+                </div>
+            </div>
+            <ul class="mode-features">
+                <li><i data-lucide="check"></i>上传歌曲</li>
+                <li><i data-lucide="check"></i>选择场景</li>
+                <li><i data-lucide="check"></i>AI 过渡</li>
+                <li><i data-lucide="check"></i>一键生成</li>
+            </ul>
+            <button class="mode-button">开始快速混音</button>
+        </div>
+        
+        <!-- 巫师模式 -->
+        <div class="mode-card" onclick="location.href='/wizard'">
+            <div class="mode-header">
+                <div class="mode-icon">
+                    <i data-lucide="sparkles"></i>
+                </div>
+                <div class="mode-info">
+                    <h2 class="mode-title">巫师模式</h2>
+                    <p class="mode-desc">完整编辑，专业级功能</p>
+                </div>
+            </div>
+            <ul class="mode-features">
+                <li><i data-lucide="check"></i>多轨编辑</li>
+                <li><i data-lucide="check"></i>精确剪切</li>
+                <li><i data-lucide="check"></i>音频效果</li>
+                <li><i data-lucide="check"></i>专业功能</li>
+            </ul>
+            <button class="mode-button">进入专业编辑</button>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>BigEyeMix - 大眼怪の混剪平台</p>
+    </div>
+    
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -4,206 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BigEyeMix - 大眼怪の混剪平台</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            width: 100%;
-        }
-        
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 60px;
-        }
-        
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-        }
-        
-        .logo i {
-            width: 80px;
-            height: 80px;
-            stroke-width: 1.5;
-        }
-        
-        h1 {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-        
-        .subtitle {
-            font-size: 20px;
-            opacity: 0.9;
-        }
-        
-        .modes {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 40px;
-            margin-bottom: 40px;
-        }
-        
-        .mode-card {
-            background: white;
-            border-radius: 24px;
-            padding: 50px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-        
-        .mode-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        .mode-icon {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        
-        .mode-icon i {
-            width: 72px;
-            height: 72px;
-            color: #667eea;
-            stroke-width: 1.5;
-        }
-        
-        .mode-title {
-            font-size: 32px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 15px;
-            color: #333;
-        }
-        
-        .mode-desc {
-            text-align: center;
-            color: #666;
-            font-size: 16px;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-        
-        .mode-features {
-            list-style: none;
-            margin-bottom: 35px;
-        }
-        
-        .mode-features li {
-            padding: 12px 0;
-            color: #555;
-            display: flex;
-            align-items: center;
-            font-size: 15px;
-        }
-        
-        .mode-features li i {
-            color: #667eea;
-            margin-right: 12px;
-            width: 22px;
-            height: 22px;
-        }
-        
-        .mode-button {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .mode-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-        
-        .footer {
-            text-align: center;
-            color: white;
-            opacity: 0.8;
-            font-size: 14px;
-        }
-        
-        @media (max-width: 768px) {
-            .modes {
-                grid-template-columns: 1fr;
-            }
+    <script>
+        // 设备检测和路由
+        (function() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                          || window.innerWidth <= 768;
             
-            h1 {
-                font-size: 36px;
+            if (isMobile) {
+                window.location.href = '/home/index.mobile.html';
+            } else {
+                window.location.href = '/home/index.pc.html';
             }
-            
-            .mode-card {
-                padding: 35px;
-            }
-        }
-    </style>
+        })();
+    </script>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo"><i data-lucide="eye"></i></div>
-            <h1>BigEyeMix</h1>
-            <p class="subtitle">大眼怪の混剪平台 - 选择你的编辑模式</p>
-        </div>
-        
-        <div class="modes">
-            <!-- 麻瓜模式 -->
-            <div class="mode-card" onclick="location.href='/muggle'">
-                <div class="mode-icon"><i data-lucide="wand-2"></i></div>
-                <h2 class="mode-title">麻瓜模式</h2>
-                <p class="mode-desc">简单直观：3步完成混音剪辑<br>适合大眼怪脑子不好用的时候</p>
-                <ul class="mode-features">
-                    <li><i data-lucide="check"></i>上传两首歌曲</li>
-                    <li><i data-lucide="check"></i>选择混音场景</li>
-                    <li><i data-lucide="check"></i>AI 智能过渡</li>
-                    <li><i data-lucide="check"></i>一键生成混音</li>
-                </ul>
-                <button class="mode-button">开始快速混音</button>
-            </div>
-            
-            <!-- 巫师模式 -->
-            <div class="mode-card" onclick="location.href='/wizard'">
-                <div class="mode-icon"><i data-lucide="sparkles"></i></div>
-                <h2 class="mode-title">巫师模式</h2>
-                <p class="mode-desc">完整编辑：完整模式音频编辑<br>适合大眼怪清醒想认真的时候</p>
-                <ul class="mode-features">
-                    <li><i data-lucide="check"></i>多轨音频编辑</li>
-                    <li><i data-lucide="check"></i>精确剪切和拼接</li>
-                    <li><i data-lucide="check"></i>丰富的音频效果</li>
-                    <li><i data-lucide="check"></i>专业级功能</li>
-                </ul>
-                <button class="mode-button">进入专业编辑</button>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>BigEyeMix - 大眼怪の混剪平台</p>
-        </div>
-    </div>
-    
-    <script>lucide.createIcons();</script>
+    <p style="text-align:center;padding:50px;font-family:sans-serif;">正在跳转...</p>
 </body>
 </html>
